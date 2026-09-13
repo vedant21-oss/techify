@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Category {
+  LAPTOP
+  PHONE
+}
+
+/// A purchasable device configuration. Specs are stored in two forms:
+/// pre-normalized 0–100 tiers (cpu/gpu/camera/display) curated from benchmark
+/// standings, and raw physical values the scoring engine normalizes itself.
+model Device {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  category    Category
+  brand       String
+  name        String
+  variant     String
+  /// Price in whole rupees.
+  price       Int
+  releaseYear Int
+
+  cpuName     String
+  gpuName     String?
+  displayName String
+  cameraName  String?
+
+  cpuScore     Int
+  gpuScore     Int?
+  cameraScore  Int?
+  displayScore Int
+
+  ramGb           Int
+  storageGb       Int
+  /// Watt-hours for laptops, mAh for phones. Null when the listing doesn't publish it.
+  batteryCapacity Int?
+  chargingWatts   Int?
+  weightGrams     Int?
+
+  /// When the price and specs were last checked, and where.
+  priceCheckedOn DateTime @default(now())
+  priceSource    String   @default("")
+
+  /// Overrides the marketplace search text when brand + name is ambiguous.
+  searchQuery String?
+
+  alerts PriceAlert[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, price])
+}
+
+/// "Email me when this device drops to ₹X." Checked by the daily price-alert job.
+model PriceAlert {
+  id            String    @id @default(cuid())
+  email         String
+  deviceId      String
+  device        Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  targetPrice   Int
+  priceAtSignup Int
+  /// Secret used in the one-click unsubscribe link.
+  token         String    @unique @default(cuid())
+  createdAt     DateTime  @default(now())
+  /// Set once the alert email has been sent; triggered alerts stop counting toward limits.
+  triggeredAt   DateTime?
+
+  @@unique([email, deviceId])
+  @@index([triggeredAt])
+}
+
+enum PaymentStatus {
+  CREATED
+  PAID
+  FAILED
+}
+
+/// One Razorpay order for Techify Pro. A PAID row makes its email a Pro member.
+model ProPayment {
+  id                String        @id @default(cuid())
+  email             String
+  razorpayOrderId   String        @unique
+  razorpayPaymentId String?       @unique
+  amountPaise       Int
+  status            PaymentStatus @default(CREATED)
+  createdAt         DateTime      @default(now())
+  paidAt            DateTime?
+
+  @@index([email, status])
+}
