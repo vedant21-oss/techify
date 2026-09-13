@@ -3,18 +3,20 @@
 import { Heart } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
+import { useMessages } from "@/components/lang-provider";
 import { useRecent, useSaved } from "@/lib/saved-store";
 import { cn } from "@/lib/utils";
 
 export function SaveButton({ slug, name, variant = "cell" }: { slug: string; name: string; variant?: "cell" | "block" }) {
   const { isSaved, toggle } = useSaved();
+  const t = useMessages();
   const saved = isSaved(slug);
   return (
     <button
       type="button"
       onClick={() => toggle(slug)}
       aria-pressed={saved}
-      aria-label={saved ? `Remove ${name} from saved` : `Save ${name}`}
+      aria-label={saved ? t.save.remove(name) : t.save.saveName(name)}
       className={cn(
         "flex items-center gap-2 label-mono transition-colors",
         variant === "cell"
@@ -25,7 +27,7 @@ export function SaveButton({ slug, name, variant = "cell" }: { slug: string; nam
       )}
     >
       <Heart className={cn("size-4", saved && "fill-current")} aria-hidden />
-      {saved ? "Saved" : "Save"}
+      {saved ? t.save.saved : t.save.save}
     </button>
   );
 }
@@ -39,9 +41,10 @@ export function RecentTracker({ slug }: { slug: string }) {
 
 export function SavedNavLink({ className }: { className?: string }) {
   const { saved } = useSaved();
+  const t = useMessages();
   return (
     <Link href="/saved" className={className}>
-      Saved
+      {t.nav.saved}
       {saved.length > 0 && (
         <span className="ml-2 inline-grid min-w-5 place-items-center bg-pink px-1 text-[0.7rem] text-ink-deep tabular">
           {saved.length}

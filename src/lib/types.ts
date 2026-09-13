@@ -4,9 +4,13 @@ import type {
   Category,
   Explanation,
   FactorScore,
+  GapExplanation,
   SortMode,
   UseCase,
+  Verdict,
+  WeightMap,
 } from "@/lib/engine";
+import type { PriceSummary } from "@/lib/features/price-history";
 
 /** A device as sent to the browser. */
 export interface DeviceDTO {
@@ -52,6 +56,11 @@ export interface ScoringQuery {
   useCaseLabel: string;
   budget: number;
   sort: SortMode;
+  weights: WeightMap | null;
+  /** The weights actually used (preset or custom), as fractions. */
+  effectiveWeights: WeightMap;
+  mustHaves: string[];
+  custom: boolean;
 }
 
 export interface RecommendationResponse {
@@ -62,10 +71,28 @@ export interface RecommendationResponse {
   cheapestAvailable: DeviceDTO | null;
 }
 
+export interface ReviewDTO {
+  id: string;
+  name: string;
+  rating: number;
+  title: string;
+  body: string;
+  usedFor: string;
+  ownedMonths: number;
+  createdAt: string;
+}
+
 export interface DeviceDetailResponse {
   query: ScoringQuery;
   poolSize: number;
   item: RecommendationItem;
+  leader: RecommendationItem | null;
+  gap: GapExplanation | null;
+  priceHistory: {
+    points: { price: number; recordedAt: string }[];
+    summary: Omit<PriceSummary, "trackingSince"> & { trackingSince: string | null };
+  };
+  reviews: { average: number | null; count: number; items: ReviewDTO[] };
   alternatives: {
     cheaper: RecommendationItem | null;
     better: RecommendationItem | null;
@@ -86,4 +113,29 @@ export interface ComparisonResponse {
   poolSize: number;
   items: RecommendationItem[];
   missing: string[];
+}
+
+export interface VersusResponse {
+  category: Category;
+  a: DeviceDTO;
+  b: DeviceDTO;
+  budget: number;
+  poolSize: number;
+  verdicts: {
+    useCase: UseCase;
+    label: string;
+    aScore: number;
+    bScore: number;
+    verdict: Verdict;
+  }[];
+  wins: { a: number; b: number; tie: number };
+}
+
+export interface DealItem {
+  device: DeviceDTO;
+  previous: number;
+  change: number;
+  changePercent: number;
+  isLowest: boolean;
+  changedAt: string;
 }

@@ -1,44 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useMessages } from "@/components/lang-provider";
 import { formatBudgetShort, formatPrice } from "@/lib/engine";
 import type { LandingData } from "@/lib/recommendations";
 import { cn } from "@/lib/utils";
 
 type Story = LandingData["story"];
 
-const STEPS = [
-  {
-    title: "Filter to your budget",
-    body: (s: Story) =>
-      `Everything above ${formatPrice(s.budget)} is set aside. ${s.poolSize} phones are left to compete, and they're judged only against each other.`,
-  },
-  {
-    title: "Turn specs into scores",
-    body: (s: Story) =>
-      `Chipset tiers, mAh, watts and gigabytes all become 0–100 scores: half against the whole market, half against the other ${s.poolSize} phones.`,
-  },
-  {
-    title: "Weight them for the job",
-    body: (s: Story) =>
-      `${s.useCaseLabel} cares about some specs more than others. Each score is multiplied by its weight, and the results add up to the match score.`,
-  },
-  {
-    title: "Rank, check and explain",
-    body: (s: Story) =>
-      `Phones missing a spec the job can't do without lose points. Then everything is ranked, and ${s.top.name} comes out on top at ${s.top.matchScore}.`,
-  },
-];
-
 function Visual({ story, step }: { story: Story; step: number }) {
+  const t = useMessages();
   const maxWeight = Math.max(...story.factors.map((f) => f.weight));
   return (
     <div className="border-[3px] border-ink bg-paper">
       <div className="flex items-center justify-between gap-3 border-b-[3px] border-ink bg-ink px-4 py-2.5 text-paper">
         <span className="label-mono">
-          {story.useCaseLabel} phones · under {formatBudgetShort(story.budget)}
+          {t.landing.storyHeader(story.useCaseLabel, story.budget)}
         </span>
-        <span className="label-mono text-pink">Step {step + 1}/4</span>
+        <span className="label-mono text-pink">{t.landing.step(step + 1)}</span>
       </div>
 
       <div className="relative min-h-[23rem] p-4 sm:p-5">
@@ -60,7 +39,7 @@ function Visual({ story, step }: { story: Story; step: number }) {
               </div>
             ))}
           </div>
-          <p className="mt-4 border-t-[3px] border-pink pt-2 label-mono">Budget line: {formatPrice(story.budget)}</p>
+          <p className="mt-4 border-t-[3px] border-pink pt-2 label-mono">{t.landing.budgetLine(story.budget)}</p>
         </div>
 
         {/* Steps 2–3: scores, then weights */}
@@ -96,7 +75,7 @@ function Visual({ story, step }: { story: Story; step: number }) {
               step === 2 ? "opacity-100" : "opacity-0",
             )}
           >
-            <span className="label-mono">Weighted score</span>
+            <span className="label-mono">{t.breakdown.weightedScore}</span>
             <span className="font-heading text-4xl font-black tabular">{story.top.weightedScore}</span>
           </p>
         </div>
@@ -119,7 +98,7 @@ function Visual({ story, step }: { story: Story; step: number }) {
                   <span className="block truncate font-medium">{r.name}</span>
                   <span className="block font-mono text-[0.7rem]">
                     {formatPrice(r.price)}
-                    {r.penalized && " · below the gaming baseline"}
+                    {r.penalized && t.landing.belowBaseline}
                   </span>
                 </span>
                 <span className="font-heading text-3xl font-black tabular">{r.matchScore}</span>
@@ -133,6 +112,7 @@ function Visual({ story, step }: { story: Story; step: number }) {
 }
 
 export function ScoringStory({ story }: { story: Story }) {
+  const t = useMessages();
   const [active, setActive] = useState(0);
   const stepRefs = useRef<(HTMLLIElement | null)[]>([]);
 
@@ -152,7 +132,7 @@ export function ScoringStory({ story }: { story: Story }) {
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_1.05fr] lg:gap-16">
       <ol className="flex flex-col">
-        {STEPS.map((step, i) => (
+        {t.landing.steps.map((step, i) => (
           <li
             key={step.title}
             ref={(el) => {
@@ -173,7 +153,7 @@ export function ScoringStory({ story }: { story: Story }) {
               {step.title}
             </h3>
             <p className={cn("mt-4 max-w-[46ch] text-lg leading-relaxed transition-opacity duration-300", active !== i && "lg:opacity-50")}>
-              {step.body(story)}
+              {step.body(story.budget, story.poolSize, story.useCaseLabel, story.top.name, story.top.matchScore)}
             </p>
             <div className="mt-6 lg:hidden">
               <Visual story={story} step={i} />

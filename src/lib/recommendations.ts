@@ -4,20 +4,29 @@ import { buyLinks } from "@/lib/buy-links";
 import { DEFAULT_USE_CASE, isUseCaseFor } from "@/lib/catalog-config";
 import { prisma } from "@/lib/db";
 import {
+  decodeWeights,
+  explainGap,
+  headToHead,
+  PROFILES,
   requireProfile,
   scorePool,
   selectPool,
+  withCustomWeights,
   type Category,
   type EngineDevice,
   type ScoredDevice,
   type SortMode,
   type UseCase,
+  type UseCaseProfile,
+  type WeightMap,
 } from "@/lib/engine";
 import type {
   ComparisonResponse,
+  DealItem,
   DeviceDetailResponse,
   DeviceDTO,
   PickItem,
+  VersusResponse,
   RecommendationItem,
   RecommendationResponse,
   ScoringQuery,
@@ -26,6 +35,11 @@ import type { Category as DbCategory, Device } from "@/generated/prisma/client";
 import { findAlternatives } from "@/lib/features/alternatives";
 import { pickOfTheWeek, pickOfTheYear, type EditorialPick } from "@/lib/features/picks";
 import { searchDevices } from "@/lib/features/search";
+import { meetsMustHaves, parseMustHaves, type MustHaveSubject } from "@/lib/features/must-haves";
+import { isDeal, summarizePrices } from "@/lib/features/price-history";
+import type { Lang } from "@/lib/i18n/config";
+import { localizeGap, localizeScored, profileText } from "@/lib/i18n/engine-hi";
+import { MESSAGES } from "@/lib/i18n/messages";
 
 const toDbCategory = (c: Category): DbCategory => (c === "laptop" ? "LAPTOP" : "PHONE");
 const fromDbCategory = (c: DbCategory): Category => (c === "LAPTOP" ? "laptop" : "phone");
@@ -106,8 +120,46 @@ function toItem(scored: ScoredDevice, records: Map<string, Device>, budget: numb
   };
 }
 
-function buildQuery(category: Category, useCase: UseCase, budget: number, sort: SortMode): ScoringQuery {
-  return { category, useCase, useCaseLabel: requireProfile(category, useCase).label, budget, sort };
+function mustHaveSubject(d: Device): MustHaveSubject {
+  return {
+    category: fromDbCategory(d.category),
+    displayName: d.displayName,
+    gpuName: d.gpuName,
+    cameraName: d.cameraName,
+    ramGb: d.ramGb,
+    storageGb: d.storageGb,
+    batteryCapacity: d.batteryCapacity,
+    chargingWatts: d.chargingWatts,
+    weightGrams: d.weightGrams,
+  };
+}
+
+function profileFor(category: Category, useCase: UseCase, weights: WeightMap | null): UseCaseProfile {
+  const base = requireProfile(category, useCase);
+  return weights ? withCustomWeights(base, weights) : base;
+}
+
+function buildQuery(
+  profile: UseCaseProfile,
+  useCase: UseCase,
+  budget: number,
+  sort: SortMode,
+  weights: WeightMap | null,
+  mustHaves: string[],
+  lang: Lang,
+): ScoringQuery {
+  const label = profileText(lang, profile).label;
+  return {
+    category: profile.category,
+    useCase,
+    useCaseLabel: profile.custom ? MESSAGES[lang].finder.yourMix(label) : label,
+    budget,
+    sort,
+    weights: profile.custom ? weights : null,
+    effectiveWeights: profile.weights,
+    mustHaves,
+    custom: Boolean(profile.custom),
+  };
 }
 
 export async function getRecommendations(params: {
@@ -115,45 +167,54 @@ export async function getRecommendations(params: {
   useCase: UseCase;
   budget: number;
   sort: SortMode;
-}): Promise<RecommendationResponse> {
+  weights?: WeightMap | null;
+  mustHaves?: string[];
+}, lang: Lang = "en"): Promise<RecommendationResponse> {
   const { category, useCase, budget, sort } = params;
-  const records = await loadCategory(category);
+  const weights = params.weights ?? null;
+  const mustHaves = params.mustHaves ?? [];
+  const records = (await loadCategory(category)).filter((r) => meetsMustHaves(mustHaveSubject(r), mustHaves));
   const byId = new Map(records.map((r) => [r.id, r]));
-  const catalog = records.map(toEngineDevice);
-  const pool = selectPool(catalog, { category, useCase, budget });
-  const scored = scorePool(pool, requireProfile(category, useCase), { budget }, { sort });
+  const pool = selectPool(records.map(toEngineDevice), { category, useCase, budget });
+  const profile = profileFor(category, useCase, weights);
+  const scored = scorePool(pool, profile, { budget }, { sort }).map((s) => localizeScored(lang, s, profile, pool.length));
 
   return {
-    query: buildQuery(category, useCase, budget, sort),
+    query: buildQuery(profile, useCase, budget, sort, weights, mustHaves, lang),
     poolSize: pool.length,
     results: scored.map((s) => toItem(s, byId, budget)),
     cheapestAvailable: pool.length === 0 && records.length ? toDTO(records[0]) : null,
   };
 }
 
+type ScoringContextInput = { useCase?: string; budget?: number; w?: string; must?: string };
+
 /**
  * Scores the requested devices against everything in budget, so their sub-scores
  * mean the same thing they mean on the results page. Requested devices above the
- * budget still join the pool; they are flagged rather than dropped.
+ * budget (or outside the must-haves) still join the pool; they are flagged rather than dropped.
  */
-async function scoreWithinContext(
-  category: Category,
-  slugs: string[],
-  context: { useCase?: string; budget?: number },
-) {
+async function scoreWithinContext(category: Category, slugs: string[], context: ScoringContextInput, lang: Lang) {
   const records = await loadCategory(category);
   const wanted = records.filter((r) => slugs.includes(r.slug));
   const useCase =
     context.useCase && isUseCaseFor(category, context.useCase) ? context.useCase : DEFAULT_USE_CASE[category];
   const budget = context.budget ?? Math.max(...wanted.map((r) => r.price));
+  const weights = decodeWeights(category, context.w);
+  const mustHaves = parseMustHaves(category, context.must);
 
-  const poolRecords = records.filter((r) => r.price <= budget || slugs.includes(r.slug));
+  const poolRecords = records.filter(
+    (r) => slugs.includes(r.slug) || (r.price <= budget && meetsMustHaves(mustHaveSubject(r), mustHaves)),
+  );
   const byId = new Map(poolRecords.map((r) => [r.id, r]));
-  const scored = scorePool(poolRecords.map(toEngineDevice), requireProfile(category, useCase), { budget });
+  const profile = profileFor(category, useCase, weights);
+  const scored = scorePool(poolRecords.map(toEngineDevice), profile, { budget }).map((s) =>
+    localizeScored(lang, s, profile, poolRecords.length),
+  );
   const bySlug = new Map(scored.map((s) => [s.device.slug, toItem(s, byId, budget)]));
 
   return {
-    query: buildQuery(category, useCase, budget, "match"),
+    query: buildQuery(profile, useCase, budget, "match", weights, mustHaves, lang),
     poolSize: poolRecords.length,
     items: slugs.map((slug) => bySlug.get(slug)).filter((i): i is RecommendationItem => Boolean(i)),
     scored,
@@ -163,32 +224,61 @@ async function scoreWithinContext(
 
 export async function getDeviceDetail(
   slug: string,
-  context: { useCase?: string; budget?: number },
+  context: ScoringContextInput,
+  lang: Lang = "en",
 ): Promise<DeviceDetailResponse | null> {
   const record = await prisma.device.findUnique({ where: { slug } });
   if (!record) return null;
-  const { query, poolSize, items, scored, toItem: itemFor } = await scoreWithinContext(
-    fromDbCategory(record.category),
-    [slug],
-    context,
-  );
+  const [{ query, poolSize, items, scored, toItem: itemFor }, points, reviewRows] = await Promise.all([
+    scoreWithinContext(fromDbCategory(record.category), [slug], context, lang),
+    prisma.pricePoint.findMany({ where: { deviceId: record.id }, orderBy: { recordedAt: "asc" }, select: { price: true, recordedAt: true } }),
+    prisma.review.findMany({ where: { deviceId: record.id, status: "APPROVED" }, orderBy: { createdAt: "desc" } }),
+  ]);
+
   const target = scored.find((s) => s.device.slug === slug)!;
+  const leader = scored[0];
   const { cheaper, better, similar } = findAlternatives(target, scored);
+  const summary = summarizePrices(points, record.price);
+
   return {
     query,
     poolSize,
     item: items[0],
+    leader: leader && leader.device.id !== target.device.id ? itemFor(leader) : null,
+    gap:
+      leader && leader.device.id !== target.device.id
+        ? localizeGap(lang, explainGap(target, leader), fromDbCategory(record.category))
+        : null,
     alternatives: {
       cheaper: cheaper && itemFor(cheaper),
       better: better && itemFor(better),
       similar: similar.map(itemFor),
+    },
+    priceHistory: {
+      points: points.map((p) => ({ price: p.price, recordedAt: p.recordedAt.toISOString() })),
+      summary: { ...summary, trackingSince: summary.trackingSince?.toISOString() ?? null },
+    },
+    reviews: {
+      count: reviewRows.length,
+      average: reviewRows.length ? round1(reviewRows.reduce((sum, r) => sum + r.rating, 0) / reviewRows.length) : null,
+      items: reviewRows.slice(0, 20).map((r) => ({
+        id: r.id,
+        name: r.name,
+        rating: r.rating,
+        title: r.title,
+        body: r.body,
+        usedFor: r.usedFor,
+        ownedMonths: r.ownedMonths,
+        createdAt: r.createdAt.toISOString(),
+      })),
     },
   };
 }
 
 export async function getComparison(
   slugs: string[],
-  context: { useCase?: string; budget?: number },
+  context: ScoringContextInput,
+  lang: Lang = "en",
 ): Promise<ComparisonResponse | { error: string }> {
   const found = await prisma.device.findMany({ where: { slug: { in: slugs } }, select: { slug: true, category: true } });
   const categories = new Set(found.map((d) => d.category));
@@ -196,12 +286,64 @@ export async function getComparison(
   if (categories.size > 1) return { error: "Devices to compare must be from the same category" };
 
   const present = slugs.filter((s) => found.some((d) => d.slug === s));
-  const { query, poolSize, items } = await scoreWithinContext(fromDbCategory(found[0].category), present, context);
+  const { query, poolSize, items } = await scoreWithinContext(fromDbCategory(found[0].category), present, context, lang);
   return { query, poolSize, items, missing: slugs.filter((s) => !present.includes(s)) };
 }
 
+/**
+ * Head-to-head verdicts for every use case. Both devices are scored against the
+ * category up to the pricier one's price, so budget doesn't hand either an edge.
+ */
+export async function getVersus(slugA: string, slugB: string): Promise<VersusResponse | { error: string; status: number }> {
+  if (slugA === slugB) return { error: "Pick two different devices", status: 400 };
+  const pair = await prisma.device.findMany({ where: { slug: { in: [slugA, slugB] } } });
+  const a = pair.find((d) => d.slug === slugA);
+  const b = pair.find((d) => d.slug === slugB);
+  if (!a || !b) return { error: "One of these devices isn't in the catalogue", status: 404 };
+  if (a.category !== b.category) return { error: "Head-to-heads work within phones or within laptops", status: 400 };
+
+  const category = fromDbCategory(a.category);
+  const budget = Math.max(a.price, b.price);
+  const poolRecords = (await loadCategory(category)).filter((r) => r.price <= budget);
+  const pool = poolRecords.map(toEngineDevice);
+  const verdicts = PROFILES[category].map((profile) => {
+    const scored = scorePool(pool, profile, { budget });
+    const sa = scored.find((s) => s.device.id === a.id)!;
+    const sb = scored.find((s) => s.device.id === b.id)!;
+    return {
+      useCase: profile.id,
+      label: profile.label,
+      aScore: Math.round(sa.matchScore),
+      bScore: Math.round(sb.matchScore),
+      verdict: headToHead(sa, sb),
+    };
+  });
+  const wins = { a: 0, b: 0, tie: 0 };
+  for (const v of verdicts) wins[v.verdict.winner] += 1;
+  return { category, a: toDTO(a), b: toDTO(b), budget, poolSize: pool.length, verdicts, wins };
+}
+
+/** Devices whose latest recorded price dropped by at least 3%. */
+export async function getDeals(): Promise<DealItem[]> {
+  const devices = await prisma.device.findMany({
+    include: { pricePoints: { orderBy: { recordedAt: "asc" }, select: { price: true, recordedAt: true } } },
+  });
+  return devices
+    .map((d) => ({ d, summary: summarizePrices(d.pricePoints, d.price) }))
+    .filter(({ summary }) => isDeal(summary))
+    .map(({ d, summary }) => ({
+      device: toDTO(d),
+      previous: summary.previous!,
+      change: summary.change,
+      changePercent: summary.changePercent,
+      isLowest: summary.isLowest,
+      changedAt: (d.pricePoints.at(-1)?.recordedAt ?? d.priceCheckedOn).toISOString(),
+    }))
+    .sort((x, y) => x.changePercent - y.changePercent);
+}
+
 /** Phone and laptop of the week and of the year, chosen by the rules in features/picks. */
-export const getPicks = cache(async (now: Date = new Date()): Promise<PickItem[]> => {
+export const getPicks = cache(async (now: Date = new Date(), lang: Lang = "en"): Promise<PickItem[]> => {
   const categories: Category[] = ["phone", "laptop"];
   const results: PickItem[] = [];
   for (const category of categories) {
@@ -216,7 +358,7 @@ export const getPicks = cache(async (now: Date = new Date()): Promise<PickItem[]
         category,
         period: pick.period,
         method: pick.method,
-        item: toItem(pick.scored, byId, budget),
+        item: toItem(localizeScored(lang, pick.scored, requireProfile(category, "all-rounder"), records.length), byId, budget),
       });
     }
   }
@@ -266,7 +408,7 @@ const DEMO_SIZE = 6;
 const STORY_BUDGET = 30_000;
 
 /** Real numbers from the catalogue for the animated landing page. */
-export const getLandingData = cache(async (): Promise<LandingData> => {
+export const getLandingData = cache(async (lang: Lang = "en"): Promise<LandingData> => {
   const [phones, laptops] = await Promise.all([loadCategory("phone"), loadCategory("laptop")]);
   const all = [...phones, ...laptops];
   const name = (d: Device) => (d.name.toLowerCase().startsWith(d.brand.toLowerCase()) ? d.name : `${d.brand} ${d.name}`);
@@ -274,10 +416,13 @@ export const getLandingData = cache(async (): Promise<LandingData> => {
   // Demo: six phones under ₹60k re-ranked for each use case.
   const phoneEngine = phones.map(toEngineDevice);
   const demoPool = selectPool(phoneEngine, { category: "phone", useCase: "all-rounder", budget: DEMO_BUDGET });
-  const scoredByUseCase = DEMO_USE_CASES.map((useCase) => ({
-    useCase,
-    scored: scorePool(demoPool, requireProfile("phone", useCase), { budget: DEMO_BUDGET }),
-  }));
+  const scoredByUseCase = DEMO_USE_CASES.map((useCase) => {
+    const profile = requireProfile("phone", useCase);
+    return {
+      useCase,
+      scored: scorePool(demoPool, profile, { budget: DEMO_BUDGET }).map((s) => localizeScored(lang, s, profile, demoPool.length)),
+    };
+  });
   const chosen: string[] = [];
   for (const { scored } of scoredByUseCase) {
     const top = scored.find((s) => !chosen.includes(s.device.id));
@@ -293,7 +438,7 @@ export const getLandingData = cache(async (): Promise<LandingData> => {
     poolSize: demoPool.length,
     useCases: scoredByUseCase.map(({ useCase, scored }) => ({
       id: useCase,
-      label: requireProfile("phone", useCase).label,
+      label: profileText(lang, requireProfile("phone", useCase)).label,
       entries: scored
         .filter((s) => chosen.includes(s.device.id))
         .map((s) => ({
@@ -309,7 +454,10 @@ export const getLandingData = cache(async (): Promise<LandingData> => {
 
   // Story: how one gaming query under ₹30k is scored.
   const storyPool = selectPool(phoneEngine, { category: "phone", useCase: "gaming", budget: STORY_BUDGET });
-  const storyScored = scorePool(storyPool, requireProfile("phone", "gaming"), { budget: STORY_BUDGET });
+  const gaming = requireProfile("phone", "gaming");
+  const storyScored = scorePool(storyPool, gaming, { budget: STORY_BUDGET }).map((s) =>
+    localizeScored(lang, s, gaming, storyPool.length),
+  );
   const best = storyScored[0];
   const nearby = phones
     .filter((p) => p.price >= 15_000 && p.price <= 45_000)
@@ -317,7 +465,7 @@ export const getLandingData = cache(async (): Promise<LandingData> => {
   const step = Math.max(1, Math.floor(nearby.length / 12));
   const story = {
     budget: STORY_BUDGET,
-    useCaseLabel: requireProfile("phone", "gaming").label,
+    useCaseLabel: profileText(lang, gaming).label,
     chips: nearby.filter((_, i) => i % step === 0).slice(0, 12).map((p) => ({ name: name(p), price: p.price, inBudget: p.price <= STORY_BUDGET })),
     poolSize: storyPool.length,
     top: {

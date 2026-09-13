@@ -3,23 +3,21 @@
 import { ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CATEGORIES } from "@/lib/catalog-config";
-import { formatPrice, requireProfile, type Category } from "@/lib/engine";
+import { useLang, useMessages } from "@/components/lang-provider";
+import { requireProfile, type Category } from "@/lib/engine";
+import type { Lang } from "@/lib/i18n/config";
+import { profileText } from "@/lib/i18n/engine-hi";
+import { MESSAGES } from "@/lib/i18n/messages";
 import type { ParseQueryResponse } from "@/lib/nl-query/types";
 import { finderHref } from "@/lib/url";
 
-const EXAMPLES = [
-  "laptop under seventy thousand for coding and light gaming",
-  "phone with a great camera around 45k",
-  "long battery phone below 20,000",
-];
-
-function describe(r: ParseQueryResponse): string {
-  return `${CATEGORIES.find((c) => c.id === r.category)!.label} · ${requireProfile(r.category, r.useCase).label} · up to ${formatPrice(r.budget)}`;
+function describe(r: ParseQueryResponse, lang: Lang): string {
+  const t = MESSAGES[lang];
+  return `${t.category.tab[r.category]} · ${profileText(lang, requireProfile(r.category, r.useCase)).label} · ${t.quickSearch.upTo(r.budget)}`;
 }
 
 /** Types example sentences into the empty box's placeholder, one after another. */
-function useTypedPlaceholder(enabled: boolean, fallback: string): string {
+function useTypedPlaceholder(enabled: boolean, fallback: string, examples: string[]): string {
   const [typed, setTyped] = useState(fallback);
   useEffect(() => {
     if (!enabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -28,7 +26,7 @@ function useTypedPlaceholder(enabled: boolean, fallback: string): string {
     let deleting = false;
     let timer: ReturnType<typeof setTimeout>;
     const step = () => {
-      const target = EXAMPLES[example];
+      const target = examples[example];
       if (!deleting) {
         chars += 1;
         setTyped(`${target.slice(0, chars)}▍`);
@@ -44,7 +42,7 @@ function useTypedPlaceholder(enabled: boolean, fallback: string): string {
         if (chars <= 0) {
           deleting = false;
           chars = 0;
-          example = (example + 1) % EXAMPLES.length;
+          example = (example + 1) % examples.length;
           timer = setTimeout(step, 350);
           return;
         }
@@ -53,7 +51,7 @@ function useTypedPlaceholder(enabled: boolean, fallback: string): string {
     };
     timer = setTimeout(step, 1200);
     return () => clearTimeout(timer);
-  }, [enabled]);
+  }, [enabled, examples]);
   return typed;
 }
 
@@ -73,9 +71,11 @@ export function QuickSearch({
   typewriter?: boolean;
 }) {
   const router = useRouter();
+  const lang = useLang();
+  const t = useMessages();
   const [text, setText] = useState("");
   const [focused, setFocused] = useState(false);
-  const placeholder = useTypedPlaceholder(typewriter && !focused && !text, "Just type it: “laptop under 70k for coding”");
+  const placeholder = useTypedPlaceholder(typewriter && !focused && !text, t.quickSearch.typedFallback, t.quickSearch.examples);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [applied, setApplied] = useState<ParseQueryResponse | null>(null);
@@ -83,7 +83,7 @@ export function QuickSearch({
   async function run(query: string) {
     const trimmed = query.trim();
     if (trimmed.length < 3) {
-      setError('Describe what you need, for example "phone under 30k for photography".');
+      setError(t.quickSearch.tooShort);
       return;
     }
     setPending(true);
@@ -95,7 +95,7 @@ export function QuickSearch({
         body: JSON.stringify({ query: trimmed }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Couldn't read that. Try the controls instead.");
+      if (!res.ok) throw new Error(body.error ?? t.quickSearch.parseError);
       const result = body as ParseQueryResponse;
       setApplied(result);
       if (onApply && result.category === currentCategory) {
@@ -121,7 +121,7 @@ export function QuickSearch({
         }}
       >
         <label htmlFor="quick-search" id="quick-search-label" className="sr-only">
-          Describe what you need
+          {t.quickSearch.describe}
         </label>
         <input
           id="quick-search"
@@ -132,7 +132,7 @@ export function QuickSearch({
           onChange={(event) => setText(event.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholder={focused ? "Describe what you need" : placeholder}
+          placeholder={focused ? t.quickSearch.describe : placeholder}
           className="min-w-0 flex-1 bg-transparent px-5 py-5 text-lg outline-none placeholder:text-ink-soft focus:bg-pink-tint sm:text-xl"
         />
         <button
@@ -141,7 +141,7 @@ export function QuickSearch({
           className="flex items-center justify-center gap-2 border-t-[3px] border-ink bg-ink px-7 py-4 label-mono text-paper transition-colors hover:bg-pink hover:text-ink-deep disabled:opacity-70 sm:border-t-0 sm:border-l-[3px]"
         >
           {pending && <Loader2 className="size-4 animate-spin" aria-hidden />}
-          {pending ? "Reading" : "Find matches"}
+          {pending ? t.quickSearch.reading : t.quickSearch.find}
           {!pending && <ArrowRight className="size-4" aria-hidden />}
         </button>
       </form>
@@ -149,26 +149,26 @@ export function QuickSearch({
       <div className="flex flex-col gap-3 border-t border-ink px-5 py-4 sm:flex-row sm:items-center sm:justify-between" aria-live="polite">
         {error ? (
           <p className="text-sm font-medium text-ink-deep">
-            <span className="mr-2 bg-pink px-1.5 py-0.5 label-mono">Hmm</span>
+            <span className="mr-2 bg-pink px-1.5 py-0.5 label-mono">{t.quickSearch.hmm}</span>
             {error}
           </p>
         ) : applied ? (
           <p className="text-sm">
             <span className="mr-2 label-mono text-ink-soft">
-              Read {applied.source === "claude" ? "by Claude" : "by keyword rules"} as
+              {t.quickSearch.readBy(applied.source === "claude")}
             </span>
-            <span className="font-medium">{describe(applied)}</span>
+            <span className="font-medium">{describe(applied, lang)}</span>
             {applied.assumed.includes("budget") && (
-              <span className="text-ink-soft"> · no budget mentioned, so using {formatPrice(applied.budget)}</span>
+              <span className="text-ink-soft">{t.quickSearch.assumedBudget(applied.budget)}</span>
             )}
             {applied.requestedBudget && applied.requestedBudget !== applied.budget && (
-              <span className="text-ink-soft"> · adjusted to the nearest budget we cover</span>
+              <span className="text-ink-soft">{t.quickSearch.adjusted}</span>
             )}
           </p>
         ) : (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-            <span className="label-mono text-ink-soft">Try</span>
-            {EXAMPLES.map((example) => (
+            <span className="label-mono text-ink-soft">{t.quickSearch.try}</span>
+            {t.quickSearch.examples.map((example) => (
               <button
                 key={example}
                 type="button"

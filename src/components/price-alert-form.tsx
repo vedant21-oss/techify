@@ -3,7 +3,7 @@
 import { BellRing, Check, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { formatPrice } from "@/lib/engine";
+import { useMessages } from "@/components/lang-provider";
 
 type Status =
   | { kind: "idle" }
@@ -12,6 +12,7 @@ type Status =
   | { kind: "done"; target: number; active: number; limit: number | null; updated: boolean };
 
 export function PriceAlertForm({ slug, price, name }: { slug: string; price: number; name: string }) {
+  const t = useMessages();
   const suggested = Math.floor((price * 0.9) / 500) * 500;
   const [email, setEmail] = useState("");
   const [target, setTarget] = useState(String(suggested));
@@ -28,12 +29,12 @@ export function PriceAlertForm({ slug, price, name }: { slug: string; price: num
       });
       const body = await res.json();
       if (!res.ok) {
-        setStatus({ kind: "error", message: body.error ?? "Couldn't save the alert.", limitReached: body.code === "limit_reached" });
+        setStatus({ kind: "error", message: body.error ?? t.alert.saveError, limitReached: body.code === "limit_reached" });
         return;
       }
       setStatus({ kind: "done", target: body.targetPrice, active: body.activeAlerts, limit: body.limit, updated: body.updated });
     } catch {
-      setStatus({ kind: "error", message: "Couldn't reach Techify. Check your connection and try again." });
+      setStatus({ kind: "error", message: t.alert.network });
     }
   }
 
@@ -41,14 +42,14 @@ export function PriceAlertForm({ slug, price, name }: { slug: string; price: num
     return (
       <div role="status" className="border-[3px] border-ink bg-pink-tint p-5 text-ink-deep">
         <p className="flex items-center gap-2 font-heading text-2xl font-black uppercase">
-          <Check className="size-5" aria-hidden /> {status.updated ? "Alert updated" : "Alert set"}
+          <Check className="size-5" aria-hidden /> {status.updated ? t.alert.updated : t.alert.done}
         </p>
         <p className="mt-2 text-sm leading-relaxed">
-          We&apos;ll email {email} when the {name} drops to {formatPrice(status.target)} or less.{" "}
-          {status.limit === null ? "You're on Pro, so there's no alert limit." : `You're watching ${status.active} of ${status.limit} devices on the free plan.`}
+          {t.alert.doneNote(email, name, status.target)}
+          {status.limit === null ? t.alert.pro : t.alert.free(status.active, status.limit)}
         </p>
         <button type="button" onClick={() => setStatus({ kind: "idle" })} className="mt-3 label-mono underline underline-offset-4">
-          Change target
+          {t.alert.change}
         </button>
       </div>
     );
@@ -58,14 +59,14 @@ export function PriceAlertForm({ slug, price, name }: { slug: string; price: num
     <form onSubmit={submit} className="border-[3px] border-ink bg-paper">
       <div className="flex flex-col gap-4 p-5">
         <p className="flex items-center gap-2 font-heading text-2xl font-black uppercase">
-          <BellRing className="size-5 text-pink" aria-hidden /> Price-drop alert
+          <BellRing className="size-5 text-pink" aria-hidden /> {t.alert.title}
         </p>
         <p className="text-sm leading-relaxed text-ink-soft">
-          Today it&apos;s {formatPrice(price)}. Tell us your price and we&apos;ll email you once when it gets there.
+          {t.alert.today(price)}
         </p>
         <div>
           <label htmlFor={`alert-target-${slug}`} className="label-mono">
-            Email me at or below (₹)
+            {t.alert.target}
           </label>
           <input
             id={`alert-target-${slug}`}
@@ -79,7 +80,7 @@ export function PriceAlertForm({ slug, price, name }: { slug: string; price: num
         </div>
         <div>
           <label htmlFor={`alert-email-${slug}`} className="label-mono">
-            Email
+            {t.alert.email}
           </label>
           <input
             id={`alert-email-${slug}`}
@@ -98,7 +99,7 @@ export function PriceAlertForm({ slug, price, name }: { slug: string; price: num
             {status.message}{" "}
             {status.limitReached && (
               <Link href="/pro" className="underline underline-offset-4">
-                See Pro
+                {t.alert.seePro}
               </Link>
             )}
           </p>
@@ -110,7 +111,7 @@ export function PriceAlertForm({ slug, price, name }: { slug: string; price: num
         className="flex w-full items-center justify-center gap-2 border-t-[3px] border-ink bg-ink px-5 py-3.5 label-mono text-paper hover:bg-pink hover:text-ink-deep disabled:opacity-70"
       >
         {status.kind === "saving" && <Loader2 className="size-4 animate-spin" aria-hidden />}
-        {status.kind === "saving" ? "Saving" : "Set alert"}
+        {status.kind === "saving" ? t.alert.saving : t.alert.set}
       </button>
     </form>
   );

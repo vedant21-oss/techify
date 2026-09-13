@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useMessages } from "@/components/lang-provider";
 import { formatStorage } from "@/lib/engine";
 import { matchesQuery } from "@/lib/features/search";
 import type { RecommendationItem } from "@/lib/types";
@@ -48,6 +49,7 @@ export function ResultFilters({
   onChange: (next: FilterState) => void;
   shown: number;
 }) {
+  const t = useMessages();
   const brands = [...new Set(results.map((r) => r.device.brand))].sort((a, b) => a.localeCompare(b));
   const ramSteps = steps(results.map((r) => r.device.ramGb), [8, 12, 16, 24, 32]);
   const storageSteps = steps(results.map((r) => r.device.storageGb), [128, 256, 512, 1024]);
@@ -57,20 +59,20 @@ export function ResultFilters({
     <div className="mb-8 border-[3px] border-ink bg-paper">
       <div className="flex flex-wrap items-stretch gap-3 border-b border-ink p-4">
         <label htmlFor="filter-text" className="sr-only">
-          Filter by name or chip
+          {t.filters.text}
         </label>
         <input
           id="filter-text"
           type="search"
           value={filters.text}
           onChange={(e) => onChange({ ...filters, text: e.target.value })}
-          placeholder="Filter by name or chip"
+          placeholder={t.filters.text}
           className="min-w-0 flex-1 basis-48 border-[3px] border-ink bg-paper px-3 py-2 text-sm outline-none placeholder:text-ink-soft focus:bg-pink-tint"
         />
         {ramSteps.length > 0 && (
           <>
             <label htmlFor="filter-ram" className="sr-only">
-              Minimum RAM
+              {t.filters.minRam}
             </label>
             <select
               id="filter-ram"
@@ -78,10 +80,10 @@ export function ResultFilters({
               onChange={(e) => onChange({ ...filters, minRamGb: Number(e.target.value) })}
               className={selectClass}
             >
-              <option value={0}>Any RAM</option>
+              <option value={0}>{t.filters.anyRam}</option>
               {ramSteps.map((gb) => (
                 <option key={gb} value={gb}>
-                  {gb} GB+ RAM
+                  {t.filters.ram(gb)}
                 </option>
               ))}
             </select>
@@ -90,7 +92,7 @@ export function ResultFilters({
         {storageSteps.length > 0 && (
           <>
             <label htmlFor="filter-storage" className="sr-only">
-              Minimum storage
+              {t.filters.minStorage}
             </label>
             <select
               id="filter-storage"
@@ -98,7 +100,7 @@ export function ResultFilters({
               onChange={(e) => onChange({ ...filters, minStorageGb: Number(e.target.value) })}
               className={selectClass}
             >
-              <option value={0}>Any storage</option>
+              <option value={0}>{t.filters.anyStorage}</option>
               {storageSteps.map((gb) => (
                 <option key={gb} value={gb}>
                   {formatStorage(gb)}+
@@ -109,7 +111,7 @@ export function ResultFilters({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 px-4 py-3" role="group" aria-label="Brands">
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3" role="group" aria-label={t.filters.brands}>
         {brands.map((brand) => {
           const active = filters.brands.includes(brand);
           return (
@@ -133,14 +135,14 @@ export function ResultFilters({
           );
         })}
         <span className="ml-auto flex items-center gap-3 label-mono text-ink-soft" aria-live="polite">
-          {isActive(filters) ? `Showing ${shown} of ${results.length}` : `${results.length} results`}
+          {isActive(filters) ? t.filters.showing(shown, results.length) : t.filters.results(results.length)}
           {isActive(filters) && (
             <button
               type="button"
               onClick={() => onChange(EMPTY_FILTERS)}
               className="flex items-center gap-1 text-ink underline underline-offset-4 hover:bg-pink-tint"
             >
-              <X className="size-3.5" aria-hidden /> Clear
+              <X className="size-3.5" aria-hidden /> {t.filters.clear}
             </button>
           )}
         </span>

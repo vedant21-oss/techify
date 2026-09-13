@@ -2,7 +2,8 @@
 
 import { ArrowRight, X } from "lucide-react";
 import Link from "next/link";
-import type { UseCase } from "@/lib/engine";
+import { useMessages } from "@/components/lang-provider";
+import type { UseCase, WeightMap } from "@/lib/engine";
 import { MAX_COMPARE, toSearchParams } from "@/lib/url";
 import { cn } from "@/lib/utils";
 
@@ -17,22 +18,27 @@ export function CompareTray({
   onClear,
   useCase,
   budget,
+  weights = null,
+  mustHaves = [],
 }: {
   selected: CompareSelection[];
   onRemove: (slug: string) => void;
   onClear: () => void;
   useCase: UseCase;
   budget: number;
+  weights?: WeightMap | null;
+  mustHaves?: string[];
 }) {
+  const t = useMessages();
   if (selected.length === 0) return null;
   const ready = selected.length >= 2;
-  const href = `/compare?${toSearchParams({ slugs: selected.map((s) => s.slug), useCase, budget })}`;
+  const href = `/compare?${toSearchParams({ slugs: selected.map((s) => s.slug), useCase, budget, weights, mustHaves })}`;
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 border-t-[3px] border-pink bg-ink text-paper animate-in slide-in-from-bottom-4">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-(--gutter) py-4">
         <span className="font-heading text-2xl font-black uppercase tabular">
-          Compare {selected.length}/{MAX_COMPARE}
+          {t.tray.compare(selected.length, MAX_COMPARE)}
         </span>
         <ul className="flex min-w-0 flex-1 flex-wrap gap-2">
           {selected.map((s) => (
@@ -42,7 +48,7 @@ export function CompareTray({
                 type="button"
                 onClick={() => onRemove(s.slug)}
                 className="p-1 hover:bg-pink hover:text-ink-deep"
-                aria-label={`Remove ${s.name} from comparison`}
+                aria-label={t.tray.remove(s.name)}
               >
                 <X className="size-3.5" />
               </button>
@@ -51,7 +57,7 @@ export function CompareTray({
         </ul>
         <div className="flex items-center gap-4">
           <button type="button" onClick={onClear} className="label-mono underline underline-offset-4 hover:text-pink">
-            Clear
+            {t.tray.clear}
           </button>
           <Link
             href={href}
@@ -62,7 +68,7 @@ export function CompareTray({
               !ready && "pointer-events-none bg-paper/20 text-paper",
             )}
           >
-            {ready ? "Compare side by side" : "Pick one more"}
+            {ready ? t.tray.sideBySide : t.tray.pickOneMore}
             {ready && <ArrowRight className="size-4" aria-hidden />}
           </Link>
         </div>

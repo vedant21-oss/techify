@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { getLang } from "@/lib/i18n/server";
 import { recommendationSchema, zodMessage } from "@/lib/query";
 import { getRecommendations } from "@/lib/recommendations";
 
@@ -8,5 +9,5 @@ export async function GET(request: NextRequest) {
   if (!parsed.success) {
     return Response.json({ error: zodMessage(parsed.error) }, { status: 400 });
   }
-  return Response.json(await getRecommendations(parsed.data));
+  return Response.json(await getRecommendations(parsed.data, await getLang()));
 }

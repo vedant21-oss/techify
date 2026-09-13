@@ -1,21 +1,27 @@
 import Link from "next/link";
 import { HomeLink } from "@/components/home-link";
+import { hasAffiliates } from "@/lib/buy-links";
+import { getMessages } from "@/lib/i18n/server";
 
-const footerLinks = [
-  { href: "/laptops", label: "Laptops" },
-  { href: "/phones", label: "Phones" },
-  { href: "/picks", label: "Picks" },
-  { href: "/saved", label: "Saved" },
-  { href: "/how-it-works", label: "How it works" },
-  { href: "/pro", label: "Techify Pro" },
-];
+export async function SiteFooter() {
+  const t = await getMessages();
+  const footerLinks = [
+    { href: "/laptops", label: t.nav.laptops },
+    { href: "/phones", label: t.nav.phones },
+    { href: "/quiz", label: t.nav.helpMeChoose },
+    { href: "/picks", label: t.nav.picks },
+    { href: "/deals", label: t.nav.priceDrops },
+    { href: "/upcoming", label: t.nav.upcoming },
+    { href: "/saved", label: t.nav.saved },
+    { href: "/how-it-works", label: t.nav.howItWorks },
+    { href: "/pro", label: t.nav.techifyPro },
+  ];
 
-export function SiteFooter() {
   return (
     <footer className="mt-auto overflow-hidden border-t-[3px] border-ink">
       <div className="mx-auto max-w-6xl px-(--gutter)">
-        <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-2 pt-8 label-mono">
-          <HomeLink className="hover:bg-pink-tint">Home</HomeLink>
+        <nav aria-label={t.nav.footer} className="flex flex-wrap gap-x-6 gap-y-2 pt-8 label-mono">
+          <HomeLink className="hover:bg-pink-tint">{t.nav.home}</HomeLink>
           {footerLinks.map((l) => (
             <Link key={l.href} href={l.href} className="hover:bg-pink-tint">
               {l.label}
@@ -30,9 +36,11 @@ export function SiteFooter() {
         </p>
         <div className="flex flex-col gap-3 border-t-[3px] border-ink py-6 text-sm sm:flex-row sm:justify-between sm:gap-10">
           <p className="max-w-[60ch]">
-            Prices are approximate Indian street prices and change often. Check the store before you buy.
+            {t.footer.prices}
           </p>
-          <p className="label-mono sm:text-right">Store links are plain searches, not affiliate links.</p>
+          <p className="label-mono sm:text-right">
+            {hasAffiliates() ? t.footer.affiliate : t.footer.noAffiliate}
+          </p>
         </div>
       </div>
     </footer>

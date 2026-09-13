@@ -50,7 +50,9 @@ model Device {
   /// Overrides the marketplace search text when brand + name is ambiguous.
   searchQuery String?
 
-  alerts PriceAlert[]
+  alerts      PriceAlert[]
+  pricePoints PricePoint[]
+  reviews     Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -94,4 +96,71 @@ model ProPayment {
   paidAt            DateTime?
 
   @@index([email, status])
+}
+
+/// One recorded price. Written whenever a device's price changes (seed or admin).
+model PricePoint {
+  id         String   @id @default(cuid())
+  deviceId   String
+  device     Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  price      Int
+  source     String   @default("")
+  recordedAt DateTime @default(now())
+
+  @@index([deviceId, recordedAt])
+}
+
+/// A device announced or expected in India but not on sale yet.
+model UpcomingDevice {
+  id             String                 @id @default(cuid())
+  slug           String                 @unique
+  category       Category
+  brand          String
+  name           String
+  expectedPrice  Int?
+  expectedLaunch String
+  summary        String
+  sourceUrl      String?
+  /// Set when it launches and joins the catalogue; subscribers are emailed once.
+  launchedSlug   String?
+  launchedAt     DateTime?
+  createdAt      DateTime               @default(now())
+  subscriptions  UpcomingSubscription[]
+}
+
+model UpcomingSubscription {
+  id         String         @id @default(cuid())
+  email      String
+  upcomingId String
+  upcoming   UpcomingDevice @relation(fields: [upcomingId], references: [id], onDelete: Cascade)
+  token      String         @unique @default(cuid())
+  createdAt  DateTime       @default(now())
+  notifiedAt DateTime?
+
+  @@unique([email, upcomingId])
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// An owner's review. Shown only after an admin approves it.
+model Review {
+  id          String       @id @default(cuid())
+  deviceId    String
+  device      Device       @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  name        String
+  email       String
+  rating      Int
+  title       String
+  body        String
+  usedFor     String
+  ownedMonths Int
+  status      ReviewStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+
+  @@unique([email, deviceId])
+  @@index([deviceId, status])
 }

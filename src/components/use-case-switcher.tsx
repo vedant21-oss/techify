@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { UseCaseIcon } from "@/components/use-case-icon";
 import { PROFILES, type Category, type UseCase } from "@/lib/engine";
+import type { Lang } from "@/lib/i18n/config";
+import { profileText } from "@/lib/i18n/engine-hi";
+import { MESSAGES } from "@/lib/i18n/messages";
 import { cn } from "@/lib/utils";
 
 /** Links that re-score the current view for a different use case. */
@@ -8,13 +11,16 @@ export function UseCaseSwitcher({
   category,
   active,
   hrefFor,
+  lang = "en",
 }: {
   category: Category;
   active: UseCase;
   hrefFor: (useCase: UseCase) => string;
+  lang?: Lang;
 }) {
+  const t = MESSAGES[lang];
   return (
-    <nav aria-label="Score for a different use case" className="flex flex-wrap gap-2">
+    <nav aria-label={t.device.switchUseCase} className="flex flex-wrap gap-2">
       {PROFILES[category].map((p) => {
         const isActive = p.id === active;
         return (
@@ -29,7 +35,7 @@ export function UseCaseSwitcher({
             )}
           >
             <UseCaseIcon useCase={p.id} className={cn("size-4", isActive ? "text-pink" : "text-ink")} />
-            {p.label}
+            {profileText(lang, p).label}
           </Link>
         );
       })}

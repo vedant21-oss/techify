@@ -9,7 +9,7 @@ import { formatBudgetShort, formatPrice } from "@/lib/engine";
 import { compareSchema } from "@/lib/query";
 import { getComparison } from "@/lib/recommendations";
 import type { RecommendationItem } from "@/lib/types";
-import { finderHref, toSearchParams } from "@/lib/url";
+import { finderHref, toSearchParams, versusHref } from "@/lib/url";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Compare" };
@@ -54,6 +54,14 @@ export default async function ComparePage({ searchParams }: PageProps<"/compare"
           <div className="mt-6">
             <UseCaseSwitcher category={query.category} active={query.useCase} hrefFor={(u) => hrefWith(slugs, u)} />
           </div>
+          {items.length === 2 && (
+            <Link
+              href={versusHref(items[0].device.slug, items[1].device.slug)}
+              className="mt-6 inline-flex border-[3px] border-ink bg-pink px-4 py-2.5 label-mono text-ink-deep shadow-hard hover:-translate-y-0.5"
+            >
+              See the verdict for every use case
+            </Link>
+          )}
         </div>
       </section>
 

@@ -3,10 +3,12 @@
 import { Laptop, Loader2, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLang, useMessages } from "@/components/lang-provider";
 import { Slider } from "@/components/ui/slider";
 import { UseCaseIcon } from "@/components/use-case-icon";
 import { BUDGET_RANGES, CATEGORIES } from "@/lib/catalog-config";
-import { PROFILES, formatBudgetShort, formatPrice, type Category, type SortMode, type UseCase } from "@/lib/engine";
+import { profileText } from "@/lib/i18n/engine-hi";
+import { PROFILES, formatBudgetShort, formatPrice, type Category, type SortMode, type UseCase, type WeightMap } from "@/lib/engine";
 import type { ParseQueryResponse } from "@/lib/nl-query/types";
 import type { RecommendationParams } from "@/lib/query";
 import type { RecommendationResponse } from "@/lib/types";
@@ -16,6 +18,7 @@ import { CompareTray, type CompareSelection } from "./compare-tray";
 import { QuickSearch } from "./quick-search";
 import { ResultFilters, applyFilters, EMPTY_FILTERS, type FilterState } from "./result-filters";
 import { ResultsList } from "./results-list";
+import { MustHavePicker, WeightsPanel } from "./tuning";
 
 const FETCH_DEBOUNCE_MS = 220;
 
@@ -45,18 +48,21 @@ export function Finder({
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<CompareSelection[]>([]);
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
+  const [weights, setWeights] = useState<WeightMap | null>(initialParams.weights);
+  const [mustHaves, setMustHaves] = useState<string[]>(initialParams.mustHaves);
   const resultsRef = useRef<HTMLElement>(null);
   const isFirstRun = useRef(true);
+  const lang = useLang();
+  const t = useMessages();
 
   const range = BUDGET_RANGES[category];
   const profiles = PROFILES[category];
   const activeProfile = profiles.find((p) => p.id === useCase)!;
-  const noun = CATEGORIES.find((c) => c.id === category)!;
 
   // Keep the URL shareable without a server round trip.
   useEffect(() => {
-    window.history.replaceState(null, "", `?${toSearchParams({ useCase, budget, sort })}${window.location.hash}`);
-  }, [useCase, budget, sort]);
+    window.history.replaceState(null, "", `?${toSearchParams({ useCase, budget, sort, weights, mustHaves })}${window.location.hash}`);
+  }, [useCase, budget, sort, weights, mustHaves]);
 
   useEffect(() => {
     if (isFirstRun.current) {
@@ -67,11 +73,11 @@ export function Finder({
     setLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/recommend?${toSearchParams({ category, useCase, budget })}`, {
+        const res = await fetch(`/api/recommend?${toSearchParams({ category, useCase, budget, weights, mustHaves })}`, {
           signal: controller.signal,
         });
         const body = await res.json();
-        if (!res.ok) throw new Error(body.error ?? "Couldn't load recommendations. Try again in a moment.");
+        if (!res.ok) throw new Error(body.error ?? t.finder.loadError);
         setData(body as RecommendationResponse);
         setError(null);
       } catch (err) {
@@ -85,7 +91,8 @@ export function Finder({
       controller.abort();
       clearTimeout(timer);
     };
-  }, [category, useCase, budget]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the error copy doesn't change what's fetched
+  }, [category, useCase, budget, weights, mustHaves]);
 
   const ranked = useMemo(
     () => [...data.results].sort((a, b) => (sort === "value" ? a.valueRank - b.valueRank : a.matchRank - b.matchRank)),
@@ -95,6 +102,7 @@ export function Finder({
 
   function applyParsed(result: ParseQueryResponse) {
     setUseCase(result.useCase);
+    setWeights(null);
     setBudget(result.budget);
     setSort("match");
     requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -115,10 +123,10 @@ export function Finder({
       <QuickSearch currentCategory={category} onApply={applyParsed} />
 
       <div className="mt-12 grid gap-12 lg:grid-cols-[21rem_1fr] lg:gap-14">
-        <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start" aria-label="Search controls">
-          <p className="mb-3 label-mono text-ink-soft">Or set it yourself</p>
+        <aside className="min-w-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto" aria-label={t.finder.controls}>
+          <p className="mb-3 label-mono text-ink-soft">{t.finder.orSetIt}</p>
           <div className="border-[3px] border-ink bg-paper">
-            <Step label="I'm shopping for a">
+            <Step label={t.finder.shoppingFor}>
               <div className="grid grid-cols-2 border-[3px] border-ink">
                 {CATEGORIES.map((c, i) => {
                   const Icon = c.id === "laptop" ? Laptop : Smartphone;
@@ -135,20 +143,20 @@ export function Finder({
                       )}
                     >
                       <Icon className="size-5" aria-hidden />
-                      {c.label}
+                      {t.category.tab[c.id]}
                     </Link>
                   );
                 })}
               </div>
             </Step>
 
-            <Step label="I can spend up to">
+            <Step label={t.finder.spendUpTo}>
               <output htmlFor="budget" className="block font-heading text-6xl font-black leading-none tabular">
                 {formatPrice(budget)}
               </output>
               <Slider
                 id="budget"
-                aria-label="Maximum budget"
+                aria-label={t.finder.maxBudget}
                 className="mt-6 [&_[data-slot=slider-range]]:bg-pink! [&_[data-slot=slider-thumb]]:size-6! [&_[data-slot=slider-thumb]]:border-[3px]! [&_[data-slot=slider-thumb]]:border-ink! [&_[data-slot=slider-thumb]]:bg-paper! [&_[data-slot=slider-track]]:h-3.5! [&_[data-slot=slider-track]]:border-2! [&_[data-slot=slider-track]]:border-ink! [&_[data-slot=slider-track]]:bg-paper!"
                 min={range.min}
                 max={range.max}
@@ -162,7 +170,7 @@ export function Finder({
               </div>
             </Step>
 
-            <Step label="Mostly for">
+            <Step label={t.finder.mostlyFor}>
               <div className="flex flex-col border-[3px] border-ink">
                 {profiles.map((p) => {
                   const active = p.id === useCase;
@@ -171,19 +179,29 @@ export function Finder({
                       key={p.id}
                       type="button"
                       aria-pressed={active}
-                      onClick={() => setUseCase(p.id)}
+                      onClick={() => {
+                        setUseCase(p.id);
+                        setWeights(null);
+                      }}
                       className={cn(
                         "flex items-center gap-3 border-b border-ink px-4 py-3 text-left font-medium transition-colors last:border-b-0",
                         active ? "bg-ink text-paper" : "bg-paper hover:bg-pink-tint",
                       )}
                     >
                       <UseCaseIcon useCase={p.id} className={cn("size-4 shrink-0", active ? "text-pink" : "text-ink")} />
-                      {p.label}
+                      {profileText(lang, p).label}
                     </button>
                   );
                 })}
               </div>
-              <p className="mt-4 text-sm leading-relaxed text-ink-soft">{activeProfile.description}</p>
+              <p className="mt-4 text-sm leading-relaxed text-ink-soft">{profileText(lang, activeProfile).description}</p>
+              <div className="mt-5 border-t border-ink pt-4">
+                <WeightsPanel category={category} presetWeights={activeProfile.weights} points={weights} onChange={setWeights} />
+              </div>
+            </Step>
+
+            <Step label={t.finder.mustHave}>
+              <MustHavePicker category={category} selected={mustHaves} onChange={setMustHaves} />
             </Step>
           </div>
         </aside>
@@ -198,18 +216,18 @@ export function Finder({
           <div className="mb-6 flex flex-wrap items-end justify-between gap-6 border-b-[3px] border-ink pb-6">
             <div>
               <p className="flex items-center gap-2 label-mono text-ink-soft">
-                Ranked for {data.query.useCaseLabel.toLowerCase()}
-                {loading && <Loader2 className="size-3.5 animate-spin" aria-label="Updating results" />}
+                {t.finder.rankedFor(data.query.useCaseLabel)}
+                {loading && <Loader2 className="size-3.5 animate-spin" aria-label={t.finder.updating} />}
               </p>
               <h2 id="results-heading" className="mt-2 text-5xl sm:text-6xl">
-                {data.poolSize} {data.poolSize === 1 ? noun.label : noun.plural} under {formatBudgetShort(data.query.budget)}
+                {t.finder.heading(data.poolSize, category, data.query.budget)}
               </h2>
             </div>
-            <div role="group" aria-label="Sort results" className="flex border-[3px] border-ink">
+            <div role="group" aria-label={t.finder.sortResults} className="flex border-[3px] border-ink">
               {(
                 [
-                  ["match", "Best match"],
-                  ["value", "Best value"],
+                  ["match", t.finder.bestMatch],
+                  ["value", t.finder.bestValue],
                 ] as const
               ).map(([mode, label], i) => (
                 <button
@@ -247,13 +265,13 @@ export function Finder({
           <div className={cn("transition-opacity", loading && "opacity-60")}>
             {data.results.length > 0 && visible.length === 0 ? (
               <div className="border-[3px] border-dashed border-ink px-6 py-12 text-center">
-                <p className="font-heading text-3xl font-black uppercase">No results match these filters</p>
+                <p className="font-heading text-3xl font-black uppercase">{t.finder.noFilterMatch}</p>
                 <button
                   type="button"
                   onClick={() => setFilters(EMPTY_FILTERS)}
                   className="mt-5 border-[3px] border-ink bg-pink px-5 py-2.5 label-mono text-ink-deep shadow-hard"
                 >
-                  Clear filters
+                  {t.finder.clearFilters}
                 </button>
               </div>
             ) : (
@@ -277,6 +295,8 @@ export function Finder({
         onClear={() => setSelected([])}
         useCase={useCase}
         budget={budget}
+        weights={weights}
+        mustHaves={mustHaves}
       />
     </div>
   );

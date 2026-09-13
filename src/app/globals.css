@@ -11,9 +11,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-schibsted), "Helvetica Neue", Arial, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, Menlo, monospace;
-  --font-heading: var(--font-big-shoulders), "Arial Narrow", Impact, sans-serif;
+  --font-sans: var(--font-schibsted), var(--font-devanagari), "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-plex-mono), var(--font-devanagari), ui-monospace, Menlo, monospace;
+  --font-heading: var(--font-big-shoulders), var(--font-devanagari-display), "Arial Narrow", Impact, sans-serif;
 
   --color-paper: var(--paper);
   --color-paper-deep: var(--paper-deep);
@@ -133,7 +133,7 @@
 }
 
 @utility label-mono {
-  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-family: var(--font-plex-mono), var(--font-devanagari), ui-monospace, monospace;
   font-size: 0.75rem;
   line-height: 1.3;
   text-transform: uppercase;
@@ -146,6 +146,23 @@
 }
 @utility shadow-hard-pink {
   box-shadow: 8px 8px 0 var(--pink);
+}
+
+/*
+ * Hindi: Devanagari hangs its matras above and below the line, so display type
+ * needs more leading than the tight Latin setting, and mono labels drop the tracking.
+ */
+:lang(hi) :is(h1, h2, h3, .font-heading) {
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+:lang(hi) .label-mono {
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+:lang(hi) .plate {
+  font-size: 0.66em;
+  white-space: normal;
 }
 
 /* Misregistered two-plate headline: pink slides into register on load. */
@@ -233,7 +250,7 @@ html.intro-playing {
 }
 .intro-word {
   position: relative;
-  font-family: var(--font-big-shoulders), Impact, sans-serif;
+  font-family: var(--font-big-shoulders), var(--font-devanagari-display), Impact, sans-serif;
   font-weight: 900;
   font-size: clamp(5rem, 22vw, 16rem);
   line-height: 0.8;

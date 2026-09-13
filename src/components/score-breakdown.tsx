@@ -1,3 +1,6 @@
+"use client";
+
+import { useMessages } from "@/components/lang-provider";
 import { ScoreBar } from "@/components/score-bar";
 import type { RecommendationItem } from "@/lib/types";
 
@@ -8,6 +11,7 @@ const pct = (weight: number) => `${Math.round(weight * 100)}%`;
  * followed by any baseline penalties and the final total.
  */
 export function ScoreBreakdown({ item, useCaseLabel }: { item: RecommendationItem; useCaseLabel: string }) {
+  const t = useMessages();
   const factors = [...item.breakdown].sort((a, b) => b.weight - a.weight);
   const penalized = new Set(item.penalties.map((p) => p.key));
 
@@ -23,13 +27,13 @@ export function ScoreBreakdown({ item, useCaseLabel }: { item: RecommendationIte
             >
               <div>
                 <p className="font-heading text-2xl font-black uppercase leading-none">{f.label}</p>
-                <p className="mt-1.5 label-mono text-ink-soft">weight {pct(f.weight)}</p>
+                <p className="mt-1.5 label-mono text-ink-soft">{t.breakdown.weight(pct(f.weight))}</p>
               </div>
               <div className="order-3 col-span-2 sm:order-none sm:col-span-1">
                 <ScoreBar
                   score={f.score}
                   tone={isPenalized ? "pink" : f.estimated ? "muted" : "ink"}
-                  label={`${f.label} sub-score${f.estimated ? " (estimated)" : ""}`}
+                  label={t.breakdown.subScore(f.label, f.estimated)}
                 />
                 <p className="mt-2 text-sm text-ink-soft">
                   <span className="font-medium text-ink">{f.displayValue}</span>
@@ -37,23 +41,23 @@ export function ScoreBreakdown({ item, useCaseLabel }: { item: RecommendationIte
                     ·
                   </span>
                   {f.estimated ? (
-                    "scored as typical for this budget"
+                    t.breakdown.typical
                   ) : (
                     <>
-                      market scale {Math.round(f.absolute)}
-                      {f.relative !== null && <>, this budget {Math.round(f.relative)}</>}
+                      {t.breakdown.marketScale(Math.round(f.absolute))}
+                      {f.relative !== null && t.breakdown.thisBudget(Math.round(f.relative))}
                     </>
                   )}
                 </p>
                 {isPenalized && (
                   <p className="mt-2 inline-block bg-pink px-2 py-0.5 label-mono text-ink-deep">
-                    Below the {useCaseLabel.toLowerCase()} baseline
+                    {t.breakdown.belowBaseline(useCaseLabel)}
                   </p>
                 )}
               </div>
               <div className="text-right">
                 <span className="font-heading text-4xl font-black leading-none tabular">{Math.round(f.score)}</span>
-                <span className="mt-1 block label-mono text-ink-soft">+{f.contribution.toFixed(1)} pts</span>
+                <span className="mt-1 block label-mono text-ink-soft">{t.breakdown.pts(f.contribution.toFixed(1))}</span>
               </div>
             </li>
           );
@@ -62,19 +66,19 @@ export function ScoreBreakdown({ item, useCaseLabel }: { item: RecommendationIte
 
       <dl className="flex flex-col gap-2 bg-paper-deep px-5 py-5 font-mono text-sm tabular sm:px-6">
         <div className="flex justify-between gap-4">
-          <dt>Weighted score</dt>
+          <dt>{t.breakdown.weightedScore}</dt>
           <dd>{item.weightedScore.toFixed(1)}</dd>
         </div>
         {item.penalties.map((p) => (
           <div key={p.key} className="flex justify-between gap-4">
             <dt>
-              {p.label} baseline missed ({Math.round(p.absolute)} of {p.baseline})
+              {t.breakdown.baselineMissed(p.label, Math.round(p.absolute), p.baseline)}
             </dt>
             <dd>×{p.multiplier.toFixed(2)}</dd>
           </div>
         ))}
         <div className="mt-1 flex items-baseline justify-between gap-4 border-t-[3px] border-ink pt-3">
-          <dt className="font-heading text-2xl font-black uppercase">Match score</dt>
+          <dt className="font-heading text-2xl font-black uppercase">{t.breakdown.matchScore}</dt>
           <dd className="font-heading text-4xl font-black">{item.matchScore.toFixed(1)}</dd>
         </div>
       </dl>

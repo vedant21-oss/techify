@@ -92,6 +92,8 @@ export interface UseCaseProfile {
    * short of a baseline scales the whole match score down.
    */
   baselines?: Partial<Record<FactorKey, number>>;
+  /** True when the weights came from the viewer (quiz or sliders), not the preset. */
+  custom?: boolean;
 }
 
 export interface BaselinePenalty {

@@ -22,6 +22,19 @@ The engine lives in [`src/lib/engine`](src/lib/engine). It's a framework-free Ty
 - **Picks** (`/picks`): phone and laptop of the week (rotates Mondays through the best-value strong all-rounders) and of the year (best all-rounder released that year). The rule is printed on each card.
 - **Price-drop alerts**: email plus target price. A daily job emails when a price reaches the target; every email has a one-click stop link. Free plan: 3 active alerts.
 - **Techify Pro** (`/pro`): one-time Razorpay payment (default ₹99) for unlimited alerts. The payment is only marked paid after Razorpay's signature verifies on the server.
+- **Help me choose** (`/quiz`): six questions become custom weights and a budget, then open the finder.
+- **Fine-tune weights**: sliders in the finder turn a preset into "your mix". The baselines of the preset still apply, and the mix is kept in the URL (`w=gpu.40,cpu.25`).
+- **Must-haves** (OLED, 120Hz, telephoto, RTX, 16GB+ RAM, under 1.5 kg, …) remove devices before ranking, so scores are computed only against devices that qualify (`must=oled,hz120`).
+- **"Why isn't it #1?"** on every device page: the points lost to the leader, factor by factor, plus a link to the head-to-head.
+- **Head-to-heads** at `/vs/a-vs-b`: a verdict for every use case, with both devices scored against the category up to the pricier one's price.
+- **Price history** chart on device pages and a **price drops** page (`/deals`) listing devices whose recorded price fell at least 3%.
+- **Upcoming launches** (`/upcoming`) with a one-time "notify me" email when a device launches.
+- **Owner reviews** on device pages. Reviews are held for moderation before they appear.
+- **Admin dashboard** (`/admin`, password protected): update prices (records history and runs alert checks), approve or reject reviews, add upcoming devices and mark them launched.
+- **Spec glossary**: terms like OLED, LTPO, RTX, mAh and telephoto get a plain-English tooltip wherever specs are listed.
+- **Share images**: `/api/og` renders 1200×630 cards for finder, device and head-to-head links.
+- **Hindi**: the language switch in the header translates navigation, the finder, device pages, the quiz, picks, deals, upcoming launches and the landing page. The engine's explanations are phrased in Hindi from the same selected points, so both languages always agree. Compare, head-to-head, search, saved, Pro, how-it-works and admin pages stay in English, as do device names and spec values.
+- **Affiliate links**: set `AMAZON_ASSOCIATE_TAG` / `FLIPKART_AFFILIATE_ID` and store links carry them with `rel="sponsored"`. Rankings never use them.
 
 ## Free-text search
 
@@ -65,6 +78,11 @@ npm run lint
 | `POST /api/alerts` `{"email", "slug", "targetPrice"}` | Create or update a price-drop alert |
 | `GET /api/cron/price-alerts` | Send due alert emails (`Authorization: Bearer $CRON_SECRET` in production) |
 | `POST /api/pro/order` `{"email"}` / `POST /api/pro/verify` | Razorpay order and signature verification for Pro |
+| `POST /api/reviews` `{"slug", "name", "email", "rating", "title", "body", "usedFor", "ownedMonths"}` | Submit an owner review (held for moderation) |
+| `POST /api/upcoming/subscribe` `{"slug", "email"}` | One-time launch email for an upcoming device |
+| `GET /api/og?kind=device&slug=…&useCase=…` | Share image (`kind` = `finder`, `device`, `vs` or default) |
+
+`/api/recommend` answers in the visitor's language (the `techify_lang` cookie, `en` or `hi`). Finder URLs also accept `w` (custom weights) and `must` (comma-separated must-have ids).
 
 ## Payments and email setup
 
@@ -78,11 +96,31 @@ Use cases: laptops `gaming`, `coding`, `video-editing`, `student`, `all-rounder`
 
 ## Data
 
-Seed data is in [`src/data`](src/data): 21 laptops and 22 phones. Prices are approximate street prices, and the 0–100 tiers are curated from public benchmark standings. Edit the files and run `npm run db:seed` again; it upserts by slug and removes devices that are no longer listed.
+Seed data is in [`src/data`](src/data). Prices are approximate street prices, and the 0–100 tiers are curated from public benchmark standings. Edit the files and run `npm run db:seed` again; it upserts by slug, removes devices that are no longer listed, records a price-history point whenever a price changes, and upserts the upcoming launches in `src/data/upcoming.ts`.
 
 ## Deploying to Vercel
 
-1. Create a hosted Postgres database (Neon, Supabase, Prisma Postgres, …).
-2. Set `DATABASE_URL` in the Vercel project settings.
-3. Run `npx prisma migrate deploy && npm run db:seed` against that database once.
-4. Deploy. `npm run build` runs `prisma generate` automatically.
+You need a Vercel account and a hosted Postgres database. Neon's free tier works well and connects from the Vercel dashboard.
+
+1. **Database.** Create a Postgres database (Vercel → Storage → Neon, or Neon, Supabase or Prisma Postgres directly). Copy its connection string; use the pooled URL if you're offered one.
+2. **Schema and data.** From your machine, point at that database once:
+   ```bash
+   DATABASE_URL="postgres://…" npx prisma migrate deploy
+   DATABASE_URL="postgres://…" npm run db:seed
+   ```
+3. **Import the repo.** Vercel → Add New → Project → pick the GitHub repo. The defaults are right: framework Next.js, build command `npm run build` (it runs `prisma generate`).
+4. **Environment variables** (Project → Settings → Environment Variables):
+
+   | Variable | Needed for |
+   | --- | --- |
+   | `DATABASE_URL` | Everything (required) |
+   | `APP_URL` | Links in emails and share images, e.g. `https://techify.vercel.app` |
+   | `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET` | `/admin` (locked until set) |
+   | `CRON_SECRET` | The daily price-alert job (Vercel sends it automatically) |
+   | `RESEND_API_KEY`, `ALERTS_FROM_EMAIL` | Sending alert and launch emails |
+   | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `TECHIFY_PRO_PRICE_INR` | Pro payments |
+   | `ANTHROPIC_API_KEY` | Claude reading free-text searches (keyword parser otherwise) |
+   | `AMAZON_ASSOCIATE_TAG`, `FLIPKART_AFFILIATE_ID` | Affiliate store links |
+
+5. **Deploy.** The cron in `vercel.json` starts running once the project is on a plan that includes cron jobs.
+6. **Later schema changes:** run `npx prisma migrate deploy` against the production `DATABASE_URL` before (or as part of) the deploy that needs them.

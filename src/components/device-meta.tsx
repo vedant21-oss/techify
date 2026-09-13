@@ -1,14 +1,15 @@
 import { formatNumber, formatStorage, formatWeight } from "@/lib/engine";
+import { LOCALE, type Lang } from "@/lib/i18n/config";
+import { MESSAGES } from "@/lib/i18n/messages";
 import type { DeviceDTO } from "@/lib/types";
 
-const NOT_LISTED = "Not listed";
-
-const priceDate = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+const priceDate = (lang: Lang) =>
+  new Intl.DateTimeFormat(LOCALE[lang], { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
 /** "Price checked 13 Sept 2026 · digit.in" */
-export function priceProvenance(device: Pick<DeviceDTO, "priceCheckedOn" | "priceSource">): string {
-  const date = priceDate.format(new Date(device.priceCheckedOn));
-  return device.priceSource ? `Price checked ${date} · ${device.priceSource}` : `Price checked ${date}`;
+export function priceProvenance(device: Pick<DeviceDTO, "priceCheckedOn" | "priceSource">, lang: Lang = "en"): string {
+  const checked = MESSAGES[lang].specs.priceChecked(priceDate(lang).format(new Date(device.priceCheckedOn)));
+  return device.priceSource ? `${checked} · ${device.priceSource}` : checked;
 }
 
 function battery(device: DeviceDTO): string | null {
@@ -41,20 +42,21 @@ export function keySpecs(device: DeviceDTO): string[] {
 }
 
 /** Full labelled spec list for detail and compare views. */
-export function specRows(device: DeviceDTO): { label: string; value: string }[] {
+export function specRows(device: DeviceDTO, lang: Lang = "en"): { label: string; value: string }[] {
+  const t = MESSAGES[lang].specs;
   const rows = [
-    { label: "Processor", value: device.cpuName },
-    ...(device.category === "laptop" ? [{ label: "Graphics", value: device.gpuName ?? "n/a" }] : []),
-    ...(device.category === "phone" ? [{ label: "Cameras", value: device.cameraName ?? "n/a" }] : []),
-    { label: "Display", value: device.displayName },
-    { label: "Memory", value: `${device.ramGb} GB` },
-    { label: "Storage", value: formatStorage(device.storageGb) },
-    { label: "Battery", value: battery(device) ?? NOT_LISTED },
+    { label: t.processor, value: device.cpuName },
+    ...(device.category === "laptop" ? [{ label: t.graphics, value: device.gpuName ?? "n/a" }] : []),
+    ...(device.category === "phone" ? [{ label: t.cameras, value: device.cameraName ?? "n/a" }] : []),
+    { label: t.display, value: device.displayName },
+    { label: t.memory, value: `${device.ramGb} GB` },
+    { label: t.storage, value: formatStorage(device.storageGb) },
+    { label: t.battery, value: battery(device) ?? t.notListed },
     ...(device.category === "phone"
-      ? [{ label: "Charging", value: device.chargingWatts ? `${device.chargingWatts} W` : NOT_LISTED }]
+      ? [{ label: t.charging, value: device.chargingWatts ? `${device.chargingWatts} W` : t.notListed }]
       : []),
-    { label: "Weight", value: weight(device) ?? NOT_LISTED },
-    { label: "Released", value: String(device.releaseYear) },
+    { label: t.weight, value: weight(device) ?? t.notListed },
+    { label: t.released, value: String(device.releaseYear) },
   ];
   return rows;
 }

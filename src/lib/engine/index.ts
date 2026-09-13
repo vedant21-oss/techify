@@ -3,5 +3,12 @@ export { recommend, scorePool, selectPool, ABSOLUTE_SHARE, MAX_PENALTY, PENALTY_
 export type { RecommendationQuery, ScorePoolOptions } from "./score";
 export { PROFILES, LAPTOP_PROFILES, PHONE_PROFILES, getProfile, requireProfile } from "./profiles";
 export { FACTORS, getFactor } from "./factors";
-export { describeLevel } from "./explain";
+export { describeLevel, selectExplanationPoints } from "./explain";
+export type { ExplanationPoints } from "./explain";
 export * from "./format";
+export { decodeWeights, encodeWeights, normalizeWeights, weightsToPoints, withCustomWeights, MAX_WEIGHT_POINTS } from "./custom";
+export type { WeightMap } from "./custom";
+export { explainGap } from "./gap";
+export type { FactorGap, GapExplanation } from "./gap";
+export { headToHead, TIE_MARGIN } from "./versus";
+export type { FactorEdge, Verdict } from "./versus";

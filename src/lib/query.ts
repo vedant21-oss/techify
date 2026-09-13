@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BUDGET_RANGES, DEFAULT_USE_CASE, isUseCaseFor } from "@/lib/catalog-config";
-import type { Category, SortMode, UseCase } from "@/lib/engine";
+import { decodeWeights, type Category, type SortMode, type UseCase, type WeightMap } from "@/lib/engine";
+import { parseMustHaves } from "@/lib/features/must-haves";
 import { MAX_COMPARE } from "@/lib/url";
 
 const category = z.enum(["laptop", "phone"]);
@@ -12,21 +13,40 @@ export interface RecommendationParams {
   useCase: UseCase;
   budget: number;
   sort: SortMode;
+  /** Viewer-set importance points (quiz or sliders); null uses the preset. */
+  weights: WeightMap | null;
+  /** Must-have filter ids applied before ranking. */
+  mustHaves: string[];
 }
 
 /** Strict parser for the recommend API: every field required except sort. */
 export const recommendationSchema = z
-  .object({ category, useCase: z.string(), budget, sort: sort.default("match") })
+  .object({
+    category,
+    useCase: z.string(),
+    budget,
+    sort: sort.default("match"),
+    w: z.string().max(300).optional(),
+    must: z.string().max(300).optional(),
+  })
   .refine((q) => isUseCaseFor(q.category, q.useCase), {
     message: "useCase is not valid for this category",
     path: ["useCase"],
   })
-  .transform((q) => q as RecommendationParams);
+  .transform(
+    ({ w, must, ...q }): RecommendationParams => ({
+      ...(q as Omit<RecommendationParams, "weights" | "mustHaves">),
+      weights: decodeWeights(q.category, w),
+      mustHaves: parseMustHaves(q.category, must),
+    }),
+  );
 
 /** Optional scoring context for detail and compare lookups. */
 export const contextSchema = z.object({
   useCase: z.string().optional(),
   budget: budget.optional(),
+  w: z.string().max(300).optional(),
+  must: z.string().max(300).optional(),
 });
 
 export const compareSchema = contextSchema.extend({
@@ -56,6 +76,8 @@ export function parseFinderParams(params: SearchParams, fixedCategory?: Category
     useCase: useCase && isUseCaseFor(cat, useCase) ? useCase : DEFAULT_USE_CASE[cat],
     budget: rawBudget ? Math.min(range.max, Math.max(range.min, rawBudget)) : range.default,
     sort: sort.safeParse(first(params.sort)).data ?? "match",
+    weights: decodeWeights(cat, first(params.w)),
+    mustHaves: parseMustHaves(cat, first(params.must)),
   };
 }
 

@@ -2,6 +2,7 @@
 
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useLang, useMessages } from "@/components/lang-provider";
 import { BuyButtons } from "@/components/buy-buttons";
 import { displayName, keySpecs, priceProvenance } from "@/components/device-meta";
 import { ScoreBox } from "@/components/score-bar";
@@ -31,22 +32,22 @@ export function ResultsList({
   selected: CompareSelection[];
   onToggleSelected: (item: CompareSelection) => void;
 }) {
+  const t = useMessages();
   if (results.length === 0) {
     return (
       <div className="border-[3px] border-dashed border-ink px-6 py-14 text-center">
-        <p className="font-heading text-4xl font-black uppercase">Nothing fits this budget yet</p>
+        <p className="font-heading text-4xl font-black uppercase">{t.results.nothingFits}</p>
         {cheapestAvailable && (
           <>
             <p className="mx-auto mt-4 max-w-[46ch] text-ink-soft">
-              The most affordable option we track is the {displayName(cheapestAvailable)} at{" "}
-              {formatPrice(cheapestAvailable.price)}.
+              {t.results.cheapest(displayName(cheapestAvailable), cheapestAvailable.price)}
             </p>
             <button
               type="button"
               onClick={() => onRaiseBudget(cheapestAvailable.price)}
               className="mt-6 border-[3px] border-ink bg-pink px-5 py-3 label-mono text-ink-deep shadow-hard transition-transform hover:-translate-y-0.5"
             >
-              Raise budget to {formatPrice(cheapestAvailable.price)}
+              {t.results.raiseBudget(cheapestAvailable.price)}
             </button>
           </>
         )}
@@ -92,14 +93,21 @@ function ResultCard({
   selectDisabled: boolean;
   onToggle: () => void;
 }) {
+  const t = useMessages();
+  const lang = useLang();
   const { device, explanation } = item;
   const rank = sort === "value" ? item.valueRank : item.matchRank;
-  const detailHref = `/device/${device.slug}?${toSearchParams({ useCase: query.useCase, budget: query.budget })}`;
+  const detailHref = `/device/${device.slug}?${toSearchParams({
+    useCase: query.useCase,
+    budget: query.budget,
+    weights: query.weights,
+    mustHaves: query.mustHaves,
+  })}`;
   const checkboxId = `compare-${device.slug}`;
   const hasPoints = explanation.strengths.length > 0 || explanation.tradeoffs.length > 0;
   const matchHint = item.penalties.length
-    ? `Weighted score ${Math.round(item.weightedScore)}, reduced for missing the ${query.useCaseLabel.toLowerCase()} baseline on ${item.penalties.map((p) => p.label.toLowerCase()).join(" and ")}.`
-    : `How well the specs fit ${query.useCaseLabel.toLowerCase()}, out of 100.`;
+    ? t.results.matchHintPenalty(Math.round(item.weightedScore), query.useCaseLabel, item.penalties.map((p) => p.label))
+    : t.results.matchHint(query.useCaseLabel);
 
   return (
     <article
@@ -115,7 +123,7 @@ function ResultCard({
             rank === 1 ? "bg-pink text-ink-deep" : "bg-ink text-paper",
           )}
         >
-          <span className="sr-only">Rank </span>
+          <span className="sr-only">{t.results.rank}</span>
           {rank}
         </div>
 
@@ -127,14 +135,14 @@ function ResultCard({
           </h3>
           <p className="mt-2 label-mono text-ink-soft">{device.variant}</p>
           <p className="mt-3 font-heading text-3xl font-bold tabular">{formatPrice(device.price)}</p>
-          <p className="mt-1 text-xs text-ink-soft">{priceProvenance(device)}</p>
+          <p className="mt-1 text-xs text-ink-soft">{priceProvenance(device, lang)}</p>
         </div>
 
         <div className="col-span-2 flex gap-3 sm:col-span-1 sm:self-start">
           <Tooltip>
             <TooltipTrigger asChild>
               <div tabIndex={0} className="cursor-help">
-                <ScoreBox score={item.matchScore} label="Match" tone="match" muted={sort !== "match"} />
+                <ScoreBox score={item.matchScore} label={t.results.match} tone="match" muted={sort !== "match"} />
               </div>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="max-w-60 text-balance">
@@ -144,11 +152,11 @@ function ResultCard({
           <Tooltip>
             <TooltipTrigger asChild>
               <div tabIndex={0} className="cursor-help">
-                <ScoreBox score={item.valueScore} label="Value" tone="value" muted={sort !== "value"} />
+                <ScoreBox score={item.valueScore} label={t.results.value} tone="value" muted={sort !== "value"} />
               </div>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="max-w-60 text-balance">
-              Match points per rupee, scaled so the best value in this budget scores 100.
+              {t.results.valueHint}
             </TooltipContent>
           </Tooltip>
         </div>
@@ -160,10 +168,10 @@ function ResultCard({
         {hasPoints && (
           <div className="mt-7 grid gap-6 sm:grid-cols-2 sm:gap-10">
             {explanation.strengths.length > 0 && (
-              <PointList title="Strong on" items={explanation.strengths} marker="bg-ink" />
+              <PointList title={t.results.strongOn} items={explanation.strengths} marker="bg-ink" />
             )}
             {explanation.tradeoffs.length > 0 && (
-              <PointList title="Held back by" items={explanation.tradeoffs} marker="bg-pink" />
+              <PointList title={t.results.heldBackBy} items={explanation.tradeoffs} marker="bg-pink" />
             )}
           </div>
         )}
@@ -187,13 +195,13 @@ function ResultCard({
             onCheckedChange={onToggle}
             className="size-5 border-2 border-ink data-checked:border-ink data-checked:bg-ink"
           />
-          {selectDisabled ? `Compare (max ${MAX_COMPARE})` : isSelected ? "Comparing" : "Compare"}
+          {selectDisabled ? t.results.compareMax(MAX_COMPARE) : isSelected ? t.results.comparing : t.results.compare}
         </label>
         <Link
           href={detailHref}
           className="flex items-center gap-2 px-5 py-4 label-mono transition-colors hover:bg-ink hover:text-paper sm:border-r-[3px] sm:border-ink sm:px-7"
         >
-          Why this score <ArrowRight className="size-4" aria-hidden />
+          {t.results.whyScore} <ArrowRight className="size-4" aria-hidden />
         </Link>
         <div className="col-span-2 border-t border-ink sm:col-span-1 sm:border-t-0 sm:border-r-[3px]">
           <SaveButton slug={device.slug} name={displayName(device)} />

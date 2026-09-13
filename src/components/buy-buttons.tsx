@@ -19,7 +19,7 @@ export function BuyButtons({
           key={link.store}
           href={link.url}
           target="_blank"
-          rel="noopener noreferrer"
+          rel={link.affiliate ? "sponsored noopener noreferrer" : "noopener noreferrer"}
           aria-label={`Search ${link.store} for this model (opens in a new tab)`}
           className={cn(
             "inline-flex items-center gap-1.5 label-mono",

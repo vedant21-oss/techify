@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useMessages } from "@/components/lang-provider";
 
 /** When the intro is fully gone; the sheet starts lifting at 3.6s. Mirrored in globals.css. */
 const INTRO_TOTAL_MS = 4700;
@@ -26,6 +27,7 @@ function Mark({ className }: { className: string }) {
  * page still reveals itself if JavaScript never runs.
  */
 export function IntroCurtain() {
+  const t = useMessages().landing.intro;
   const [run, setRun] = useState(0);
   const [done, setDone] = useState(false);
 
@@ -70,11 +72,13 @@ export function IntroCurtain() {
             Techify
           </span>
           <span className="intro-tagline font-heading text-[clamp(1.5rem,4vw,2.75rem)] font-bold uppercase leading-none text-paper">
-            Laptops &amp; phones, ranked for how <span className="text-pink">you</span> use them
+            {t.before}
+            <span className="text-pink">{t.you}</span>
+            {t.after}
           </span>
           <span className="intro-progress label-mono text-paper/80">
             <span className="intro-progress-bar" />
-            <span className="intro-progress-label">Printing your proof</span>
+            <span className="intro-progress-label">{t.printing}</span>
           </span>
         </div>
       </div>
@@ -87,7 +91,7 @@ export function IntroCurtain() {
         }}
         className="intro-skip label-mono"
       >
-        Skip intro →
+        {t.skip}
       </button>
     </div>
   );

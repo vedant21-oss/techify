@@ -1,19 +1,10 @@
 import { Finder } from "@/components/finder/finder";
 import { PlateHeadline } from "@/components/plate-headline";
 import type { Category } from "@/lib/engine";
+import { getLang } from "@/lib/i18n/server";
+import { MESSAGES } from "@/lib/i18n/messages";
 import { parseFinderParams } from "@/lib/query";
 import { getRecommendations } from "@/lib/recommendations";
-
-const copy: Record<Category, { lines: string[]; lede: string }> = {
-  laptop: {
-    lines: ["Laptops,", "ranked for", "your work."],
-    lede: "Gaming, coding, editing or college: set a budget and every laptop in range is scored on the specs that job needs.",
-  },
-  phone: {
-    lines: ["Phones,", "ranked for", "your day."],
-    lede: "Camera, games, battery or just good value: set a budget and every phone in range is scored on what matters to you.",
-  },
-};
 
 export async function CategoryFinderPage({
   category,
@@ -23,7 +14,9 @@ export async function CategoryFinderPage({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const params = parseFinderParams(searchParams, category);
-  const initialData = await getRecommendations(params);
+  const lang = await getLang();
+  const initialData = await getRecommendations(params, lang);
+  const copy = MESSAGES[lang].category;
 
   return (
     <>
@@ -33,7 +26,8 @@ export async function CategoryFinderPage({
           <p className="max-w-[40ch] text-lg leading-relaxed lg:pb-2">{copy[category].lede}</p>
         </div>
       </section>
-      <Finder category={category} initialParams={params} initialData={initialData} />
+      {/* Keyed by language so switching re-seeds results with the translated explanations. */}
+      <Finder key={lang} category={category} initialParams={params} initialData={initialData} />
     </>
   );
 }

@@ -32,22 +32,22 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-/**
- * Turns a numeric breakdown into plain English. Strengths are the notable factors
- * contributing the most points; trade-offs lead with any missed baselines, then the
- * notable factors costing the most points relative to a perfect score.
- */
-export function explain(
-  breakdown: FactorScore[],
-  penalties: BaselinePenalty[],
-  profile: UseCaseProfile,
-  matchRank: number,
-  poolSize: number,
-): Explanation {
-  const notable = breakdown.filter((f) => f.weight >= NOTABLE_WEIGHT && !f.estimated);
-  const noun = (f: FactorScore) => getFactor(profile.category, f.key).noun;
-  const weakPhrase = (f: FactorScore) => getFactor(profile.category, f.key).weakPhrase;
+export interface ExplanationPoints {
+  strengths: FactorScore[];
+  /** Missed baselines first, then the notable factors costing the most points. */
+  tradeoffs: FactorScore[];
+  penalized: Set<FactorScore["key"]>;
+  /** Notable factors the spec sheet doesn't list, scored as typical. */
+  unlisted: FactorScore[];
+}
 
+/**
+ * Decides what an explanation mentions, independent of wording. Strengths are the
+ * notable factors contributing the most points; trade-offs lead with any missed
+ * baselines, then the notable factors costing the most points relative to a perfect score.
+ */
+export function selectExplanationPoints(breakdown: FactorScore[], penalties: BaselinePenalty[]): ExplanationPoints {
+  const notable = breakdown.filter((f) => f.weight >= NOTABLE_WEIGHT && !f.estimated);
   const penalized = new Set(penalties.map((p) => p.key));
 
   const strengths = notable
@@ -62,6 +62,22 @@ export function explain(
     .filter((f) => f.score < WEAKNESS_THRESHOLD && !penalized.has(f.key))
     .sort((a, b) => b.weight * (100 - b.score) - a.weight * (100 - a.score));
   const tradeoffs = [...missedBaselines, ...weakest].slice(0, MAX_POINTS);
+  const unlisted = breakdown.filter((f) => f.estimated && f.weight >= NOTABLE_WEIGHT);
+
+  return { strengths, tradeoffs, penalized, unlisted };
+}
+
+/** Turns a numeric breakdown into plain English. */
+export function explain(
+  breakdown: FactorScore[],
+  penalties: BaselinePenalty[],
+  profile: UseCaseProfile,
+  matchRank: number,
+  poolSize: number,
+): Explanation {
+  const noun = (f: FactorScore) => getFactor(profile.category, f.key).noun;
+  const weakPhrase = (f: FactorScore) => getFactor(profile.category, f.key).weakPhrase;
+  const { strengths, tradeoffs, penalized, unlisted: unlistedFactors } = selectExplanationPoints(breakdown, penalties);
 
   const standing =
     matchRank === 1 && poolSize > 1
@@ -79,7 +95,7 @@ export function explain(
     body = "a balanced option without standout strengths or weak spots.";
   }
 
-  const unlisted = breakdown.filter((f) => f.estimated && f.weight >= NOTABLE_WEIGHT).map((f) => f.label.toLowerCase());
+  const unlisted = unlistedFactors.map((f) => f.label.toLowerCase());
   const caveat = unlisted.length
     ? ` ${capitalize(joinPhrases(unlisted))} ${unlisted.length === 1 ? "isn't" : "aren't"} listed yet, so ${unlisted.length === 1 ? "it's" : "they're"} scored as typical.`
     : "";

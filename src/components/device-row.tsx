@@ -1,6 +1,9 @@
+"use client";
+
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { displayName } from "@/components/device-meta";
+import { useMessages } from "@/components/lang-provider";
 import { ScoreBox } from "@/components/score-bar";
 import { formatPrice } from "@/lib/engine";
 import type { DeviceDTO, RecommendationItem } from "@/lib/types";
@@ -24,6 +27,7 @@ export function DeviceRow({
   actions?: React.ReactNode;
   className?: string;
 }) {
+  const t = useMessages();
   const link = href ?? `/device/${device.slug}`;
   return (
     <article className={cn("@container flex flex-col border-[3px] border-ink bg-paper", className)}>
@@ -41,14 +45,14 @@ export function DeviceRow({
         </div>
         {item && (
           <div className="flex shrink-0 gap-2">
-            <ScoreBox score={item.matchScore} label="Match" tone="match" />
-            <ScoreBox score={item.valueScore} label="Value" tone="value" />
+            <ScoreBox score={item.matchScore} label={t.results.match} tone="match" />
+            <ScoreBox score={item.valueScore} label={t.results.value} tone="value" />
           </div>
         )}
       </div>
       <div className="flex flex-wrap items-stretch border-t-[3px] border-ink">
         <Link href={link} className="flex items-center gap-2 px-5 py-3 label-mono hover:bg-ink hover:text-paper">
-          View details <ArrowRight className="size-4" aria-hidden />
+          {t.results.viewDetails} <ArrowRight className="size-4" aria-hidden />
         </Link>
         {actions && <div className="ml-auto flex items-stretch border-l-[3px] border-ink">{actions}</div>}
       </div>

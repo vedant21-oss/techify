@@ -1,10 +1,11 @@
 "use client";
 
+import { useMessages } from "@/components/lang-provider";
 import { ArrowRight, Pause, Play } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { UseCaseIcon } from "@/components/use-case-icon";
-import { formatBudgetShort, formatPrice } from "@/lib/engine";
+import { formatPrice } from "@/lib/engine";
 import type { LandingData } from "@/lib/recommendations";
 import { finderHref } from "@/lib/url";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ const CYCLE_MS = 3400;
  * as the use case changes. Rows slide to their new places (FLIP) and bars refill.
  */
 export function RankingDemo({ demo }: { demo: LandingData["demo"] }) {
+  const t = useMessages();
   const [active, setActive] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [hovered, setHovered] = useState(false);
@@ -75,19 +77,19 @@ export function RankingDemo({ demo }: { demo: LandingData["demo"] }) {
       <div className="flex items-center justify-between gap-3 border-b-[3px] border-ink bg-ink px-4 py-2.5 text-paper">
         <span className="flex items-center gap-2 label-mono">
           <span className="inline-block size-2 animate-pulse bg-pink" aria-hidden />
-          Live from the catalogue · phones under {formatBudgetShort(demo.budget)}
+          {t.landing.demoHeader(demo.budget)}
         </span>
         <button
           type="button"
           onClick={() => setPlaying((p) => !p)}
-          aria-label={playing ? "Pause the demo" : "Play the demo"}
+          aria-label={playing ? t.landing.pause : t.landing.play}
           className="p-1 hover:bg-pink hover:text-ink-deep"
         >
           {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
         </button>
       </div>
 
-      <div role="tablist" aria-label="Rank these phones for" className="flex overflow-x-auto border-b-[3px] border-ink">
+      <div role="tablist" aria-label={t.landing.rankThese} className="flex overflow-x-auto border-b-[3px] border-ink">
         {demo.useCases.map((u, i) => (
           <button
             key={u.id}
@@ -117,7 +119,7 @@ export function RankingDemo({ demo }: { demo: LandingData["demo"] }) {
         ))}
       </div>
 
-      <ol role="tabpanel" aria-live="polite" aria-label={`Ranked for ${current.label}`} className="relative">
+      <ol role="tabpanel" aria-live="polite" aria-label={t.landing.rankedForTab(current.label)} className="relative">
         {current.entries.map((entry, index) => (
           <li
             key={entry.slug}
@@ -163,10 +165,10 @@ export function RankingDemo({ demo }: { demo: LandingData["demo"] }) {
         className="flex items-center justify-between gap-3 border-t-[3px] border-ink px-4 py-3 label-mono transition-colors hover:bg-ink hover:text-paper"
       >
         <span>
-          #1 for {current.label.toLowerCase()}: {top.name}
+          {t.landing.top(current.label, top.name)}
         </span>
         <span className="flex shrink-0 items-center gap-1.5">
-          All {demo.poolSize} <ArrowRight className="size-4" aria-hidden />
+          {t.landing.all(demo.poolSize)} <ArrowRight className="size-4" aria-hidden />
         </span>
       </Link>
     </div>

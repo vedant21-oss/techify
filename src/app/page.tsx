@@ -12,52 +12,20 @@ import { PlateHeadline } from "@/components/plate-headline";
 import { formatBudgetShort, formatPrice, PROFILES } from "@/lib/engine";
 import { FREE_ALERT_LIMIT } from "@/lib/features/alerts";
 import { proPriceInr } from "@/lib/features/pro";
+import { profileText } from "@/lib/i18n/engine-hi";
+import { getLang } from "@/lib/i18n/server";
+import { MESSAGES } from "@/lib/i18n/messages";
 import { getLandingData, getPicks } from "@/lib/recommendations";
 import { finderHref } from "@/lib/url";
 
-const FEATURES = [
-  {
-    Icon: Sparkles,
-    title: "Just type it",
-    body: "“Laptop under 70k for coding” becomes a budget, a use case and a ranked list.",
-    href: "#search",
-    cta: "Try a sentence",
-  },
-  {
-    Icon: Columns3,
-    title: "Compare three",
-    body: "Tick any three results and see every score and spec side by side, best in each row highlighted.",
-    href: "/phones",
-    cta: "Open the finder",
-  },
-  {
-    Icon: BellRing,
-    title: "Price-drop alerts",
-    body: "Name your price on any device. We email you once when it gets there.",
-    href: "/pro",
-    cta: "How alerts work",
-  },
-  {
-    Icon: Trophy,
-    title: "Picks of the week",
-    body: "Phone and laptop of the week and of the year, chosen by a published rule instead of a sponsor.",
-    href: "/picks",
-    cta: "See the picks",
-  },
-  {
-    Icon: Heart,
-    title: "Save and come back",
-    body: "Heart devices to a shortlist and pick up your recently viewed ones. No account needed.",
-    href: "/saved",
-    cta: "Your shortlist",
-  },
-  {
-    Icon: Search,
-    title: "Search any model",
-    body: "Find a phone or laptop by name, brand or chip, like “s26 ultra” or “rtx 5060”.",
-    href: "/search",
-    cta: "Search the catalogue",
-  },
+/** Icons and destinations for the feature grid, in the same order as the copy in messages. */
+const FEATURE_LINKS = [
+  { Icon: Sparkles, href: "#search" },
+  { Icon: Columns3, href: "/phones" },
+  { Icon: BellRing, href: "/pro" },
+  { Icon: Trophy, href: "/picks" },
+  { Icon: Heart, href: "/saved" },
+  { Icon: Search, href: "/search" },
 ];
 
 export default async function Home({ searchParams }: PageProps<"/">) {
@@ -76,7 +44,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     );
   }
 
-  const [landing, picks] = await Promise.all([getLandingData(), getPicks()]);
+  const lang = await getLang();
+  const t = MESSAGES[lang];
+  const [landing, picks] = await Promise.all([getLandingData(lang), getPicks(undefined, lang)]);
+  const features = FEATURE_LINKS.map((link, i) => ({ ...link, ...t.landing.features[i] }));
   const { stats, demo, story, ticker } = landing;
   const weekly = picks.filter((p) => p.kind === "week");
 
@@ -89,38 +60,35 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       <section aria-labelledby="hero-title" className="bg-columns relative overflow-hidden border-b-[3px] border-ink">
         <div className="mx-auto max-w-6xl px-(--gutter) pt-8 pb-14 sm:pt-10 sm:pb-20">
           <div className="flex flex-wrap justify-between gap-x-8 gap-y-2 border-b border-ink pb-4 label-mono">
-            <span>Laptops &amp; phones · India</span>
-            <span>
-              {stats.devices} devices · {formatPrice(stats.minPrice)} to {formatPrice(stats.maxPrice)}
-            </span>
+            <span>{t.landing.eyebrow}</span>
+            <span>{t.landing.stats(stats.devices, stats.minPrice, stats.maxPrice)}</span>
           </div>
 
           <div className="mt-10 grid items-center gap-12 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
             <div className="min-w-0">
-              <PlateHeadline id="hero-title" lines={["Skip the", "ten open", "tabs."]} className="text-[clamp(4.25rem,17vw,9.5rem)]" />
+              <PlateHeadline id="hero-title" lines={t.landing.hero} className="text-[clamp(4.25rem,17vw,9.5rem)]" />
               <p className="mt-8 max-w-[44ch] text-xl leading-relaxed">
-                Tell Techify your budget and what you&apos;ll use it for. Every laptop or phone in range gets scored on the specs
-                that matter for that job, with the reasoning spelled out.
+                {t.landing.lede}
               </p>
               <div className="mt-9 flex flex-wrap gap-4">
                 <Link
                   href="/phones"
                   className="flex items-center gap-3 border-[3px] border-ink bg-ink px-6 py-4 font-heading text-2xl font-black uppercase text-paper shadow-[6px_6px_0_var(--pink)] transition-[transform,box-shadow] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[9px_9px_0_var(--pink)] active:translate-x-1 active:translate-y-1 active:shadow-none"
                 >
-                  <Smartphone className="size-6" aria-hidden /> Find a phone
+                  <Smartphone className="size-6" aria-hidden /> {t.landing.findPhone}
                 </Link>
                 <Link
                   href="/laptops"
                   className="flex items-center gap-3 border-[3px] border-ink bg-paper px-6 py-4 font-heading text-2xl font-black uppercase shadow-[6px_6px_0_var(--ink)] transition-[transform,box-shadow] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[9px_9px_0_var(--ink)] active:translate-x-1 active:translate-y-1 active:shadow-none"
                 >
-                  <Laptop className="size-6" aria-hidden /> Find a laptop
+                  <Laptop className="size-6" aria-hidden /> {t.landing.findLaptop}
                 </Link>
               </div>
             </div>
             <div className="min-w-0">
               <RankingDemo demo={demo} />
               <p className="mt-6 text-sm text-ink-soft">
-                Same six phones, re-ranked for each use case with the real scoring engine. Tap a tab or pause it.
+                {t.landing.demoNote}
               </p>
             </div>
           </div>
@@ -144,12 +112,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
       <div className="mx-auto max-w-6xl px-(--gutter)">
         {/* Numbers ------------------------------------------------------------------- */}
-        <section aria-label="Catalogue at a glance" data-reveal className="mt-16 grid grid-cols-2 border-[3px] border-ink lg:grid-cols-4">
+        <section aria-label={t.landing.glance} data-reveal className="mt-16 grid grid-cols-2 border-[3px] border-ink lg:grid-cols-4">
           {[
-            { value: <CountUp value={stats.devices} />, label: "laptops & phones scored" },
-            { value: <CountUp value={stats.brands} />, label: "brands on sale in India" },
-            { value: <CountUp value={stats.useCases} />, label: "use cases, each with its own weights" },
-            { value: <CountUp value={0} />, label: "sponsored placements in any ranking" },
+            { value: <CountUp value={stats.devices} />, label: t.landing.statLabels[0] },
+            { value: <CountUp value={stats.brands} />, label: t.landing.statLabels[1] },
+            { value: <CountUp value={stats.useCases} />, label: t.landing.statLabels[2] },
+            { value: <CountUp value={0} />, label: t.landing.statLabels[3] },
           ].map((stat, i) => (
             <div
               key={stat.label}
@@ -165,14 +133,14 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         <section aria-labelledby="story-title" className="pt-24">
           <div data-reveal className="flex flex-wrap items-end justify-between gap-4 border-b-[3px] border-ink pb-5">
             <h2 id="story-title" className="text-6xl sm:text-7xl">
-              How a ranking gets made
+              {t.landing.storyTitle}
             </h2>
             <Link href="/how-it-works" className="flex items-center gap-2 label-mono hover:bg-pink-tint">
-              Full method <ArrowRight className="size-4" aria-hidden />
+              {t.landing.fullMethod} <ArrowRight className="size-4" aria-hidden />
             </Link>
           </div>
           <p data-reveal className="mt-5 max-w-[60ch] text-lg text-ink-soft">
-            A real query, scrolled one step at a time: gaming phones under {formatPrice(story.budget)}.
+            {t.landing.storyLede(story.budget)}
           </p>
           <div className="mt-6">
             <ScoringStory story={story} />
@@ -183,9 +151,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         <section id="search" aria-labelledby="search-title" className="scroll-mt-28 pt-24">
           <div data-reveal className="grid items-end gap-6 border-b-[3px] border-ink pb-5 lg:grid-cols-[1fr_auto]">
             <h2 id="search-title" className="text-6xl sm:text-7xl">
-              Or just say it
+              {t.landing.sayIt}
             </h2>
-            <p className="max-w-[40ch] text-ink-soft">Write it how you&apos;d text a friend. Techify fills in the category, use case and budget.</p>
+            <p className="max-w-[40ch] text-ink-soft">{t.landing.sayItNote}</p>
           </div>
           <div data-reveal className="mt-8">
             <QuickSearch typewriter />
@@ -195,10 +163,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         {/* Features ------------------------------------------------------------------ */}
         <section aria-labelledby="features-title" className="pt-24">
           <h2 id="features-title" data-reveal className="border-b-[3px] border-ink pb-5 text-6xl sm:text-7xl">
-            Everything else it does
+            {t.landing.everything}
           </h2>
           <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map(({ Icon, title, body, href, cta }, i) => (
+            {features.map(({ Icon, title, body, href, cta }, i) => (
               <li key={title} data-reveal style={{ "--reveal-delay": i % 3 } as React.CSSProperties}>
                 <Link
                   href={href}
@@ -225,10 +193,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           <section aria-labelledby="picks-title" className="pt-24">
             <div data-reveal className="flex flex-wrap items-end justify-between gap-4 border-b-[3px] border-ink pb-5">
               <h2 id="picks-title" className="text-6xl sm:text-7xl">
-                This week&apos;s picks
+                {t.landing.weekPicks}
               </h2>
               <Link href="/picks" className="flex items-center gap-2 label-mono hover:bg-pink-tint">
-                Plus devices of the year <ArrowRight className="size-4" aria-hidden />
+                {t.landing.plusYear} <ArrowRight className="size-4" aria-hidden />
               </Link>
             </div>
             <div className="mt-10 grid gap-6 lg:grid-cols-2">
@@ -246,23 +214,22 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           <div className="p-7 sm:p-10">
             <p className="label-mono text-pink">Techify Pro</p>
             <h2 id="pro-title" className="mt-4 text-6xl sm:text-7xl">
-              Wait for the right price
+              {t.landing.proTitle}
             </h2>
             <p className="mt-5 max-w-[50ch] text-lg leading-relaxed text-paper/85">
-              Set a target price on any device and get one email when it drops. Free covers {FREE_ALERT_LIMIT} devices at a
-              time. Pro watches everything on your list.
+              {t.landing.proBody(FREE_ALERT_LIMIT)}
             </p>
           </div>
           <div className="flex flex-col justify-between border-t-[3px] border-paper lg:border-t-0 lg:border-l-[3px]">
             <div className="p-7 sm:p-10">
               <p className="font-heading text-8xl font-black leading-none tabular">{formatPrice(proPriceInr())}</p>
-              <p className="mt-2 label-mono text-paper/70">one time · UPI, cards, netbanking</p>
+              <p className="mt-2 label-mono text-paper/70">{t.landing.proPay}</p>
             </div>
             <Link
               href="/pro"
               className="flex items-center justify-between gap-3 border-t-[3px] border-paper bg-pink px-7 py-5 font-heading text-3xl font-black uppercase text-ink-deep transition-colors hover:bg-paper sm:px-10"
             >
-              Get Pro <ArrowRight className="size-7" aria-hidden />
+              {t.landing.getPro} <ArrowRight className="size-7" aria-hidden />
             </Link>
           </div>
         </section>
@@ -270,12 +237,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         {/* Final call to action ----------------------------------------------------- */}
         <section aria-labelledby="start-title" className="py-24">
           <h2 id="start-title" data-reveal className="text-center text-[clamp(3.5rem,11vw,8rem)]">
-            Ready when you are
+            {t.landing.ready}
           </h2>
           <div className="mt-12 grid gap-6 md:grid-cols-2">
             {([
-              { id: "phone", label: "Phones", Icon: Smartphone },
-              { id: "laptop", label: "Laptops", Icon: Laptop },
+              { id: "phone", label: t.nav.phones, Icon: Smartphone },
+              { id: "laptop", label: t.nav.laptops, Icon: Laptop },
             ] as const).map(({ id, label, Icon }, i) => (
               <Link
                 key={id}
@@ -286,13 +253,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               >
                 <div className="flex items-start justify-between gap-4 p-7 sm:p-9">
                   <div>
-                    <p className="label-mono text-ink-soft">Ranked for {PROFILES[id].map((p) => p.label.toLowerCase()).join(", ")}</p>
+                    <p className="label-mono text-ink-soft">{t.landing.rankedFor(PROFILES[id].map((p) => profileText(lang, p).label))}</p>
                     <p className="mt-4 font-heading text-7xl font-black uppercase leading-none sm:text-8xl">{label}</p>
                   </div>
                   <Icon className="size-12 shrink-0 text-pink transition-transform duration-300 group-hover:scale-110" aria-hidden />
                 </div>
                 <span className="mt-auto flex items-center gap-2 border-t-[3px] border-ink px-7 py-4 label-mono transition-colors group-hover:bg-ink group-hover:text-paper sm:px-9">
-                  Start ranking {label.toLowerCase()} <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" aria-hidden />
+                  {t.landing.startRanking(label)} <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" aria-hidden />
                 </span>
               </Link>
             ))}
