@@ -30,7 +30,7 @@ export async function isProMember(email: string): Promise<boolean> {
 }
 
 /** Creates a Razorpay order and records it, returning what Checkout needs to open. */
-export async function createProOrder(rawEmail: string) {
+export async function createProOrder(rawEmail: string, userId?: string) {
   const { keyId, keySecret } = credentials();
   const email = normalizeEmail(rawEmail);
   const amountPaise = proPriceInr() * 100;
@@ -44,7 +44,7 @@ export async function createProOrder(rawEmail: string) {
   });
 
   await prisma.proPayment.create({
-    data: { email, razorpayOrderId: order.id, amountPaise },
+    data: { email, razorpayOrderId: order.id, amountPaise, userId },
   });
 
   return { orderId: order.id, amountPaise, currency: "INR", keyId, email };

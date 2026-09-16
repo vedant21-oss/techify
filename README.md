@@ -34,6 +34,7 @@ The engine lives in [`src/lib/engine`](src/lib/engine). It's a framework-free Ty
 - **Spec glossary**: terms like OLED, LTPO, RTX, mAh and telephoto get a plain-English tooltip wherever specs are listed.
 - **Share images**: `/api/og` renders 1200×630 cards for finder, device and head-to-head links.
 - **Hindi**: the language switch in the header translates navigation, the finder, device pages, the quiz, picks, deals, upcoming launches and the landing page. The engine's explanations are phrased in Hindi from the same selected points, so both languages always agree. Compare, head-to-head, search, saved, Pro, how-it-works and admin pages stay in English, as do device names and spec values.
+- **Accounts** (`/login`, `/signup`, `/account`): email and password. Logging in syncs the saved list and recently viewed across devices, lists every price alert and launch email with a stop button, keeps Pro with the account, and writes reviews under the account name. Alerts and Pro bought with an email only attach once that email is confirmed through the link sent at sign-up. Passwords are hashed with scrypt, sessions are random tokens stored only as hashes, five wrong passwords lock the account for 15 minutes, and password reset links expire after an hour and work once. Without Resend configured, confirmation and reset emails are printed to the server log.
 - **Affiliate links**: set `AMAZON_ASSOCIATE_TAG` / `FLIPKART_AFFILIATE_ID` and store links carry them with `rel="sponsored"`. Rankings never use them.
 
 ## Free-text search
@@ -80,6 +81,7 @@ npm run lint
 | `POST /api/pro/order` `{"email"}` / `POST /api/pro/verify` | Razorpay order and signature verification for Pro |
 | `POST /api/reviews` `{"slug", "name", "email", "rating", "title", "body", "usedFor", "ownedMonths"}` | Submit an owner review (held for moderation) |
 | `POST /api/upcoming/subscribe` `{"slug", "email"}` | One-time launch email for an upcoming device |
+| `GET/POST/PUT /api/account/lists` | Logged-in saved list and history: read, merge this browser's lists, replace one list |
 | `GET /api/og?kind=device&slug=…&useCase=…` | Share image (`kind` = `finder`, `device`, `vs` or default) |
 
 `/api/recommend` answers in the visitor's language (the `techify_lang` cookie, `en` or `hi`). Finder URLs also accept `w` (custom weights) and `must` (comma-separated must-have ids).

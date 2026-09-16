@@ -3,10 +3,12 @@
 import { BellRing, Check, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useMessages } from "@/components/lang-provider";
+import { useSessionUser } from "@/components/session-provider";
 
 export function NotifyForm({ slug, name }: { slug: string; name: string }) {
   const t = useMessages();
-  const [email, setEmail] = useState("");
+  const account = useSessionUser();
+  const [email, setEmail] = useState(account?.email ?? "");
   const [state, setState] = useState<{ kind: "idle" | "saving" | "done" } | { kind: "error"; message: string }>({ kind: "idle" });
 
   if (state.kind === "done") {

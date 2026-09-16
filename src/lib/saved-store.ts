@@ -3,9 +3,10 @@
 import { useCallback, useSyncExternalStore } from "react";
 
 /*
- * Saved devices and recently viewed devices live in localStorage: no account needed,
- * private to this browser. Reads tolerate storage being unavailable (private mode,
- * blocked site data) and simply behave as empty.
+ * Saved devices and recently viewed devices live in localStorage, so they work with
+ * no account. When someone is logged in, SessionProvider mirrors every change to the
+ * account as well. Reads tolerate storage being unavailable (private mode, blocked
+ * site data) and simply behave as empty.
  */
 
 const SAVED_KEY = "techify:saved";
@@ -14,6 +15,12 @@ const RECENT_LIMIT = 12;
 const EMPTY: string[] = [];
 
 const listeners = new Set<() => void>();
+let remoteSync: ((kind: "SAVED" | "RECENT", slugs: string[]) => void) | null = null;
+
+/** Called by SessionProvider: forward local list changes to the logged-in account. */
+export function setRemoteListSync(fn: typeof remoteSync) {
+  remoteSync = fn;
+}
 const snapshots = new Map<string, { raw: string | null; value: string[] }>();
 
 function readRaw(key: string): string | null {
@@ -39,7 +46,8 @@ function snapshot(key: string): string[] {
   return value;
 }
 
-function write(key: string, value: string[]) {
+function write(key: string, value: string[], sync = true) {
+  if (sync && remoteSync) remoteSync(key === SAVED_KEY ? "SAVED" : "RECENT", value);
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
@@ -85,4 +93,19 @@ export function useRecent() {
   }, []);
   const clear = useCallback(() => write(RECENT_KEY, []), []);
   return { recent, record, clear };
+}
+
+/** Local lists in and out, for merging with an account without echoing back to it. */
+export const adoptLists = {
+  current: () => ({ saved: snapshot(SAVED_KEY), recent: snapshot(RECENT_KEY) }),
+  replace: (lists: { saved?: unknown; recent?: unknown }) => {
+    const clean = (v: unknown) => (Array.isArray(v) ? v.filter((s): s is string => typeof s === "string") : []);
+    write(SAVED_KEY, clean(lists.saved), false);
+    write(RECENT_KEY, clean(lists.recent), false);
+  },
+};
+
+export function clearLocalLists() {
+  write(SAVED_KEY, [], false);
+  write(RECENT_KEY, [], false);
 }

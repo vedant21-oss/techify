@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { Big_Shoulders, IBM_Plex_Mono, Noto_Sans_Devanagari, Schibsted_Grotesk, Teko } from "next/font/google";
 import { LangProvider } from "@/components/lang-provider";
+import { SessionProvider } from "@/components/session-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LOCALE } from "@/lib/i18n/config";
 import { getLang } from "@/lib/i18n/server";
+import { getCurrentUser } from "@/lib/server/auth";
 import "./globals.css";
 
 const display = Big_Shoulders({ variable: "--font-big-shoulders", subsets: ["latin"], weight: ["700", "900"] });
@@ -27,17 +29,20 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const lang = await getLang();
+  const [lang, user] = await Promise.all([getLang(), getCurrentUser()]);
+  const sessionUser = user && { name: user.name, email: user.email, verified: user.verified, sessionId: user.sessionId };
   const fonts = [display, body, mono, hindiBody, hindiDisplay].map((f) => f.variable).join(" ");
   return (
     <html lang={LOCALE[lang]} className={`${fonts} h-full antialiased`}>
       <body className="flex min-h-full flex-col [--gutter:1rem] sm:[--gutter:1.5rem]">
         <LangProvider lang={lang}>
-          <TooltipProvider delayDuration={150}>
-            <SiteHeader />
-            <main className="flex-1">{children}</main>
-            <SiteFooter />
-          </TooltipProvider>
+          <SessionProvider user={sessionUser}>
+            <TooltipProvider delayDuration={150}>
+              <SiteHeader />
+              <main className="flex-1">{children}</main>
+              <SiteFooter />
+            </TooltipProvider>
+          </SessionProvider>
         </LangProvider>
       </body>
     </html>

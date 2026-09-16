@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Loader2 } from "lucide-react";
+import Link from "next/link";
 import Script from "next/script";
 import { useState } from "react";
 import { formatPrice } from "@/lib/engine";
@@ -28,8 +29,19 @@ type Status =
   | { kind: "error"; message: string }
   | { kind: "paid"; email: string };
 
-export function ProCheckout({ priceInr, configured }: { priceInr: number; configured: boolean }) {
-  const [email, setEmail] = useState("");
+export function ProCheckout({
+  priceInr,
+  configured,
+  accountEmail,
+  alreadyPro,
+}: {
+  priceInr: number;
+  configured: boolean;
+  /** Set when logged in: Pro is bought for the account's email. */
+  accountEmail: string | null;
+  alreadyPro: boolean;
+}) {
+  const [email, setEmail] = useState(accountEmail ?? "");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [scriptReady, setScriptReady] = useState(false);
 
@@ -80,6 +92,23 @@ export function ProCheckout({ priceInr, configured }: { priceInr: number; config
     }
   }
 
+  if (alreadyPro && status.kind !== "paid") {
+    return (
+      <div role="status" className="border-[3px] border-ink bg-pink p-6 text-ink-deep sm:p-8">
+        <p className="flex items-center gap-3 font-heading text-4xl font-black uppercase">
+          <Check className="size-8" aria-hidden /> You&apos;re Pro
+        </p>
+        <p className="mt-3 text-lg">
+          Price alerts for <strong>{accountEmail}</strong> are unlimited.{" "}
+          <Link href="/account" className="underline underline-offset-4">
+            Manage them in your account
+          </Link>
+          .
+        </p>
+      </div>
+    );
+  }
+
   if (status.kind === "paid") {
     return (
       <div role="status" className="border-[3px] border-ink bg-pink p-6 text-ink-deep sm:p-8">
@@ -103,7 +132,7 @@ export function ProCheckout({ priceInr, configured }: { priceInr: number; config
       <form onSubmit={pay} className="border-[3px] border-ink bg-paper shadow-hard-pink">
         <div className="p-6 sm:p-8">
           <label htmlFor="pro-email" className="label-mono">
-            Email you use for price alerts
+            {accountEmail ? "Pro will be added to your account" : "Email you use for price alerts"}
           </label>
           <input
             id="pro-email"
@@ -112,9 +141,10 @@ export function ProCheckout({ priceInr, configured }: { priceInr: number; config
             required
             autoComplete="email"
             value={email}
+            readOnly={Boolean(accountEmail)}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="mt-3 w-full border-[3px] border-ink bg-paper px-4 py-3 text-lg outline-none placeholder:text-ink-soft focus:bg-pink-tint"
+            className="mt-3 w-full read-only:bg-paper-deep border-[3px] border-ink bg-paper px-4 py-3 text-lg outline-none placeholder:text-ink-soft focus:bg-pink-tint"
           />
           {!configured && (
             <p className="mt-4 bg-pink-tint px-3 py-2 text-sm text-ink-deep">
@@ -139,6 +169,14 @@ export function ProCheckout({ priceInr, configured }: { priceInr: number; config
       <p className="mt-4 text-sm text-ink-soft">
         One-time payment. UPI, cards, netbanking and wallets through Razorpay; Techify never sees your card or UPI details.
       </p>
+      {!accountEmail && (
+        <p className="mt-2 text-sm">
+          <Link href="/login?next=/pro" className="font-medium underline decoration-pink decoration-2 underline-offset-4">
+            Log in
+          </Link>{" "}
+          first to keep Pro with your account on every device.
+        </p>
+      )}
     </>
   );
 }

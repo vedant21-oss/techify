@@ -53,6 +53,7 @@ model Device {
   alerts      PriceAlert[]
   pricePoints PricePoint[]
   reviews     Review[]
+  listEntries ListEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -94,8 +95,12 @@ model ProPayment {
   status            PaymentStatus @default(CREATED)
   createdAt         DateTime      @default(now())
   paidAt            DateTime?
+  /// Set when the buyer was logged in, so Pro follows the account.
+  userId            String?
+  user              User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([email, status])
+  @@index([userId, status])
 }
 
 /// One recorded price. Written whenever a device's price changes (seed or admin).
@@ -160,7 +165,79 @@ model Review {
   ownedMonths Int
   status      ReviewStatus @default(PENDING)
   createdAt   DateTime     @default(now())
+  userId      String?
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@unique([email, deviceId])
   @@index([deviceId, status])
+}
+
+/// A Techify account. Alerts, launch emails and Pro purchases made with the same
+/// email only attach to the account once that email is verified.
+model User {
+  id              String      @id @default(cuid())
+  email           String      @unique
+  name            String
+  /// scrypt hash: `scrypt$N$r$p$salt$hash`.
+  passwordHash    String
+  emailVerifiedAt DateTime?
+  failedLogins    Int         @default(0)
+  lockedUntil     DateTime?
+  createdAt       DateTime    @default(now())
+  sessions        Session[]
+  tokens          AuthToken[]
+  listEntries     ListEntry[]
+  payments        ProPayment[]
+  reviews         Review[]
+}
+
+/// A logged-in browser. Only a SHA-256 of the cookie token is stored.
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+enum AuthTokenKind {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+/// Single-use link token for email verification or password reset (hash only).
+model AuthToken {
+  id        String        @id @default(cuid())
+  kind      AuthTokenKind
+  tokenHash String        @unique
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime      @default(now())
+
+  @@index([userId, kind])
+}
+
+enum ListKind {
+  SAVED
+  RECENT
+}
+
+/// A device on an account's saved list or recently viewed history.
+model ListEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId  String
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  kind      ListKind
+  /// Newest first when sorted descending.
+  addedAt   DateTime @default(now())
+
+  @@unique([userId, kind, deviceId])
+  @@index([userId, kind, addedAt])
 }

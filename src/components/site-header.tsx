@@ -1,9 +1,10 @@
-import { Search } from "lucide-react";
+import { CircleUserRound, Search } from "lucide-react";
 import Link from "next/link";
 import { HomeLink } from "@/components/home-link";
 import { LanguageToggle } from "@/components/lang-provider";
 import { SavedNavLink } from "@/components/saved-controls";
 import { getMessages } from "@/lib/i18n/server";
+import { getCurrentUser } from "@/lib/server/auth";
 
 export function RegisterMark({ className }: { className?: string }) {
   return (
@@ -19,7 +20,9 @@ const cell = "flex shrink-0 items-center border-l-[3px] border-ink px-4 label-mo
 const mobileLink = "shrink-0 border-r border-ink px-4 py-2.5 label-mono hover:bg-pink-tint";
 
 export async function SiteHeader() {
-  const t = await getMessages();
+  const [t, user] = await Promise.all([getMessages(), getCurrentUser()]);
+  const accountHref = user ? "/account" : "/login";
+  const accountLabel = user ? t.auth.account : t.auth.login;
   const links = [
     { href: "/laptops", label: t.nav.laptops },
     { href: "/phones", label: t.nav.phones },
@@ -82,6 +85,11 @@ export async function SiteHeader() {
             <Search className="size-4" />
           </Link>
 
+          <Link href={accountHref} aria-label={user ? `${t.auth.account}: ${user.name}` : undefined} className={`${cell} gap-2`}>
+            <CircleUserRound className="size-4" aria-hidden />
+            <span className="hidden xl:inline">{user ? user.name.split(" ")[0] : accountLabel}</span>
+            <span className="sr-only xl:hidden">{accountLabel}</span>
+          </Link>
           <Link href="/pro" className="flex items-center border-l-[3px] border-ink bg-pink px-4 label-mono text-ink-deep hover:bg-ink hover:text-paper lg:px-5">
             {t.nav.pro}
           </Link>

@@ -4,6 +4,7 @@ import { BellRing, Check, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useMessages } from "@/components/lang-provider";
+import { useSessionUser } from "@/components/session-provider";
 
 type Status =
   | { kind: "idle" }
@@ -14,7 +15,8 @@ type Status =
 export function PriceAlertForm({ slug, price, name }: { slug: string; price: number; name: string }) {
   const t = useMessages();
   const suggested = Math.floor((price * 0.9) / 500) * 500;
-  const [email, setEmail] = useState("");
+  const account = useSessionUser();
+  const [email, setEmail] = useState(account?.email ?? "");
   const [target, setTarget] = useState(String(suggested));
   const [status, setStatus] = useState<Status>({ kind: "idle" });
 

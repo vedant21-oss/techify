@@ -3,6 +3,7 @@
 import { Check, Loader2, Star } from "lucide-react";
 import { useState } from "react";
 import { useLang, useMessages } from "@/components/lang-provider";
+import { useSessionUser } from "@/components/session-provider";
 import { LOCALE } from "@/lib/i18n/config";
 import type { DeviceDetailResponse } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -68,6 +69,7 @@ export function ReviewsSection({ slug, name, reviews, useCases }: { slug: string
 
 function ReviewForm({ slug, name, useCases }: { slug: string; name: string; useCases: string[] }) {
   const t = useMessages();
+  const account = useSessionUser();
   const [rating, setRating] = useState(0);
   const [status, setStatus] = useState<{ kind: "idle" | "saving" | "done" } | { kind: "error"; message: string }>({ kind: "idle" });
 
@@ -125,10 +127,20 @@ function ReviewForm({ slug, name, useCases }: { slug: string; name: string; useC
           ))}
         </div>
       </fieldset>
+      {account && (
+        <p className="text-sm text-ink-soft">
+          {account.name} · {account.email}
+        </p>
+      )}
       {[
         ["review-title", "title", t.reviews.headline, "text"],
-        ["review-name", "name", t.reviews.name, "text"],
-        ["review-email", "email", t.reviews.email, "email"],
+        // Logged in: the account's name and email are used instead.
+        ...(account
+          ? []
+          : [
+              ["review-name", "name", t.reviews.name, "text"],
+              ["review-email", "email", t.reviews.email, "email"],
+            ]),
       ].map(([id, nameAttr, label, type]) => (
         <div key={id}>
           <label htmlFor={`${id}-${slug}`} className="label-mono">

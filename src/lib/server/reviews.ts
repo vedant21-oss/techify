@@ -16,7 +16,7 @@ export const reviewSchema = z.object({
 
 export type ReviewInput = z.infer<typeof reviewSchema>;
 
-export async function submitReview(input: ReviewInput) {
+export async function submitReview(input: ReviewInput, userId?: string) {
   const device = await prisma.device.findUnique({ where: { slug: input.slug }, select: { id: true } });
   if (!device) return { ok: false as const, status: 404, error: "That device isn't in the catalogue any more." };
   const email = normalizeEmail(input.email);
@@ -33,6 +33,7 @@ export async function submitReview(input: ReviewInput) {
     usedFor: input.usedFor,
     ownedMonths: input.ownedMonths,
     status: "PENDING" as const,
+    userId: userId ?? null,
   };
   await prisma.review.upsert({
     where: { email_deviceId: { email, deviceId: device.id } },

@@ -3,6 +3,8 @@ import { PlateHeadline } from "@/components/plate-headline";
 import { formatPrice } from "@/lib/engine";
 import { FREE_ALERT_LIMIT } from "@/lib/features/alerts";
 import { proPriceInr } from "@/lib/features/pro";
+import { isProAccount } from "@/lib/server/account";
+import { getCurrentUser } from "@/lib/server/auth";
 import { paymentsConfigured } from "@/lib/server/pro";
 import { ProCheckout } from "./pro-checkout";
 
@@ -13,8 +15,10 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function ProPage() {
+export default async function ProPage() {
   const price = proPriceInr();
+  const user = await getCurrentUser();
+  const alreadyPro = user ? await isProAccount(user) : false;
   const rows = [
     ["Rankings, compare, picks, saved list", "Included", "Included"],
     ["Free-text search", "Included", "Included"],
@@ -86,7 +90,7 @@ export default function ProPage() {
           <h2 id="checkout-title" className="mb-6 text-5xl">
             Get Pro
           </h2>
-          <ProCheckout priceInr={price} configured={paymentsConfigured()} />
+          <ProCheckout priceInr={price} configured={paymentsConfigured()} accountEmail={user?.email ?? null} alreadyPro={alreadyPro} />
         </aside>
       </div>
     </div>
