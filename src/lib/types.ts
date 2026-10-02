@@ -131,6 +131,15 @@ export interface VersusResponse {
   wins: { a: number; b: number; tie: number };
 }
 
+export interface BrandSummary {
+  brand: string;
+  slug: string;
+  laptops: number;
+  phones: number;
+  minPrice: number;
+  maxPrice: number;
+}
+
 export interface DealItem {
   device: DeviceDTO;
   previous: number;

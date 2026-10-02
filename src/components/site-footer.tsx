@@ -13,6 +13,8 @@ export async function SiteFooter() {
     { href: "/deals", label: t.nav.priceDrops },
     { href: "/upcoming", label: t.nav.upcoming },
     { href: "/saved", label: t.nav.saved },
+    { href: "/best", label: t.nav.bestLists },
+    { href: "/brands", label: t.nav.brands },
     { href: "/how-it-works", label: t.nav.howItWorks },
     { href: "/pro", label: t.nav.techifyPro },
   ];

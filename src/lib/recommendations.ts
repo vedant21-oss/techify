@@ -21,6 +21,7 @@ import {
   type WeightMap,
 } from "@/lib/engine";
 import type {
+  BrandSummary,
   ComparisonResponse,
   DealItem,
   DeviceDetailResponse,
@@ -36,6 +37,7 @@ import { findAlternatives } from "@/lib/features/alternatives";
 import { pickOfTheWeek, pickOfTheYear, type EditorialPick } from "@/lib/features/picks";
 import { searchDevices } from "@/lib/features/search";
 import { meetsMustHaves, parseMustHaves, type MustHaveSubject } from "@/lib/features/must-haves";
+import { brandSlug, COLLECTION_SIZE, type Collection } from "@/lib/features/collections";
 import { isDeal, summarizePrices } from "@/lib/features/price-history";
 import type { Lang } from "@/lib/i18n/config";
 import { localizeGap, localizeScored, profileText } from "@/lib/i18n/engine-hi";
@@ -321,6 +323,50 @@ export async function getVersus(slugA: string, slugB: string): Promise<VersusRes
   const wins = { a: 0, b: 0, tie: 0 };
   for (const v of verdicts) wins[v.verdict.winner] += 1;
   return { category, a: toDTO(a), b: toDTO(b), budget, poolSize: pool.length, verdicts, wins };
+}
+
+/**
+ * One ready-made shortlist: the same scoring as the finder, capped at the top few.
+ * `poolSize` is how many devices were ranked, so the page can say what was considered.
+ */
+export async function getCollection(collection: Collection, lang: Lang = "en") {
+  const { category, useCase, budget, mustHaves = [] } = collection;
+  const data = await getRecommendations({ category, useCase, budget, sort: "match", mustHaves }, lang);
+  return { ...data, items: data.results.slice(0, COLLECTION_SIZE) };
+}
+
+/** Every brand in the catalogue, with what it sells and its price range. */
+export const getBrands = cache(async (): Promise<BrandSummary[]> => {
+  const devices = await prisma.device.findMany({ select: { brand: true, category: true, price: true } });
+  const byBrand = new Map<string, BrandSummary>();
+  for (const d of devices) {
+    const entry = byBrand.get(d.brand) ?? {
+      brand: d.brand,
+      slug: brandSlug(d.brand),
+      laptops: 0,
+      phones: 0,
+      minPrice: d.price,
+      maxPrice: d.price,
+    };
+    if (d.category === "LAPTOP") entry.laptops += 1;
+    else entry.phones += 1;
+    entry.minPrice = Math.min(entry.minPrice, d.price);
+    entry.maxPrice = Math.max(entry.maxPrice, d.price);
+    byBrand.set(d.brand, entry);
+  }
+  return [...byBrand.values()].sort((a, b) => b.laptops + b.phones - (a.laptops + a.phones) || a.brand.localeCompare(b.brand));
+});
+
+/** One brand's devices, cheapest first within each category. */
+export async function getBrand(slug: string): Promise<{ brand: string; laptops: DeviceDTO[]; phones: DeviceDTO[] } | null> {
+  const records = await prisma.device.findMany({ orderBy: { price: "asc" } });
+  const matching = records.filter((r) => brandSlug(r.brand) === slug);
+  if (matching.length === 0) return null;
+  return {
+    brand: matching[0].brand,
+    laptops: matching.filter((r) => r.category === "LAPTOP").map(toDTO),
+    phones: matching.filter((r) => r.category === "PHONE").map(toDTO),
+  };
 }
 
 /** Devices whose latest recorded price dropped by at least 3%. */

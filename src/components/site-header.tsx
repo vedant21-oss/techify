@@ -29,6 +29,8 @@ export async function SiteHeader() {
     { href: "/quiz", label: t.nav.quiz },
   ];
   const exploreLinks = [
+    { href: "/best", label: t.nav.bestLists },
+    { href: "/brands", label: t.nav.brands },
     { href: "/picks", label: t.nav.picksOfWeek },
     { href: "/deals", label: t.nav.priceDrops },
     { href: "/upcoming", label: t.nav.upcomingLaunches },

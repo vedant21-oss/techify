@@ -7,6 +7,8 @@ type QuizText = Record<string, { question: string; options: Record<string, strin
 
 const en = {
   lang: { switchTo: "हिन्दी", switchLabel: "हिन्दी में देखें" },
+    bestLists: "Loading the best lists",
+    brands: "Loading brands",
   nav: {
     main: "Main",
     home: "Home",
@@ -28,6 +30,8 @@ const en = {
     upcoming: "Upcoming",
     howItWorks: "How it works",
     techifyPro: "Techify Pro",
+    bestLists: "Best lists",
+    brands: "Brands",
     footer: "Footer",
   },
   footer: {
@@ -404,6 +408,48 @@ const en = {
     local: "Saved devices and your recent history stay in this browser. Log in to keep them on every device.",
     synced: "Saved devices and recent history are synced to your account, so they're here on every device you log in on.",
   },
+  best: {
+    hubLines: ["Ready-made", "shortlists."],
+    hubLede: "The lists people actually search for, built from the same scores as the finder. Every one re-ranks itself as prices change.",
+    kinds: {
+      "phone:all-rounder": "phones",
+      "phone:photography": "camera phones",
+      "phone:gaming": "gaming phones",
+      "phone:battery": "long-battery phones",
+      "phone:budget": "budget phones",
+      "laptop:all-rounder": "laptops",
+      "laptop:gaming": "gaming laptops",
+      "laptop:coding": "laptops for coding",
+      "laptop:video-editing": "laptops for editing",
+      "laptop:student": "everyday laptops",
+    } as Record<string, string>,
+    title: (kind: string, budget: number | null) => (budget ? `Best ${kind} under ${formatBudgetShort(budget)}` : `Best ${kind}`),
+    lede: (shown: number, kind: string, pool: number) =>
+      `The top ${shown} of ${pool} ${kind} we track, scored on the specs that job needs and re-checked whenever a price moves.`,
+    mustHaveNote: (labels: string) => `Only devices with ${labels} are ranked here.`,
+    howPicked: "How this list is made",
+    howPickedBody: (useCase: string) =>
+      `Every device in range is scored for ${useCase.toLowerCase()}, then ranked. Nothing here is paid for, and the working is on each device page.`,
+    openFinder: "Change the budget in the finder",
+    otherLists: "Other lists",
+    empty: "Nothing in this range right now. Try the finder with a different budget.",
+    seeWhy: "Why this score",
+    flagship: "flagship phones",
+  },
+  brands: {
+    hubLines: ["Every", "brand."],
+    hubLede: "Every brand we track, with how many devices and the price range. Open one to see its full line-up.",
+    counts: (laptops: number, phones: number) =>
+      [laptops ? `${laptops} laptop${laptops === 1 ? "" : "s"}` : "", phones ? `${phones} phone${phones === 1 ? "" : "s"}` : ""]
+        .filter(Boolean)
+        .join(" · "),
+    range: (min: number, max: number) => `${formatPrice(min)} to ${formatPrice(max)}`,
+    lede: (brand: string, n: number) => `The ${n} ${brand} device${n === 1 ? "" : "s"} we track, cheapest first. Open any one to see how it scores and why.`,
+    laptops: "Laptops",
+    phones: "Phones",
+    allBrands: "All brands",
+    notFound: "We don't track that brand yet",
+  },
   landing: {
     eyebrow: "Laptops & phones · India",
     stats: (devices: number, min: number, max: number) => `${devices} devices · ${formatPrice(min)} to ${formatPrice(max)}`,
@@ -484,6 +530,8 @@ export type Messages = typeof en;
 
 const hi: Messages = {
   lang: { switchTo: "English", switchLabel: "View in English" },
+    bestLists: "बेस्ट लिस्ट खुल रही हैं",
+    brands: "ब्रांड खुल रहे हैं",
   nav: {
     main: "मुख्य",
     home: "होम",
@@ -505,6 +553,8 @@ const hi: Messages = {
     upcoming: "आने वाले",
     howItWorks: "यह कैसे काम करता है",
     techifyPro: "Techify Pro",
+    bestLists: "बेस्ट लिस्ट",
+    brands: "ब्रांड",
     footer: "फ़ुटर",
   },
   footer: {
@@ -905,6 +955,46 @@ const hi: Messages = {
     lines: ["आपकी", "शॉर्टलिस्ट।"],
     local: "सेव किए डिवाइस और हाल का इतिहास इसी ब्राउज़र में रहते हैं। हर डिवाइस पर रखने के लिए लॉग इन करें।",
     synced: "सेव किए डिवाइस और हाल का इतिहास आपके अकाउंट से सिंक हैं, इसलिए हर डिवाइस पर मिलेंगे जहाँ आप लॉग इन करें।",
+  },
+  best: {
+    hubLines: ["तैयार", "लिस्ट।"],
+    hubLede: "जो लोग सबसे ज़्यादा खोजते हैं, वही लिस्ट, फ़ाइंडर वाले स्कोर से बनी। कीमत बदलते ही हर लिस्ट अपने-आप फिर से रैंक होती है।",
+    kinds: {
+      "phone:all-rounder": "फ़ोन",
+      "phone:photography": "कैमरा फ़ोन",
+      "phone:gaming": "गेमिंग फ़ोन",
+      "phone:battery": "लंबी बैटरी वाले फ़ोन",
+      "phone:budget": "बजट फ़ोन",
+      "laptop:all-rounder": "लैपटॉप",
+      "laptop:gaming": "गेमिंग लैपटॉप",
+      "laptop:coding": "कोडिंग के लिए लैपटॉप",
+      "laptop:video-editing": "एडिटिंग के लिए लैपटॉप",
+      "laptop:student": "रोज़ के काम के लैपटॉप",
+    },
+    title: (kind, budget) => (budget ? `${formatBudgetShort(budget)} तक के सबसे अच्छे ${kind}` : `सबसे अच्छे ${kind}`),
+    lede: (shown, kind, pool) =>
+      `हमारे ${pool} ${kind} में से टॉप ${shown}, उस काम के लिए ज़रूरी स्पेक्स पर स्कोर किए गए और कीमत बदलते ही दोबारा जाँचे गए।`,
+    mustHaveNote: (labels) => `यहाँ सिर्फ़ ${labels} वाले डिवाइस रैंक होते हैं।`,
+    howPicked: "यह लिस्ट कैसे बनी",
+    howPickedBody: (useCase) =>
+      `रेंज के हर डिवाइस को ${useCase} के लिए स्कोर करके रैंक किया जाता है। यहाँ कुछ भी पैसे लेकर नहीं रखा जाता, और पूरा हिसाब हर डिवाइस के पेज पर है।`,
+    openFinder: "फ़ाइंडर में बजट बदलें",
+    otherLists: "और लिस्ट",
+    empty: "इस रेंज में अभी कुछ नहीं है। फ़ाइंडर में कोई और बजट आज़माएँ।",
+    seeWhy: "यह स्कोर क्यों",
+    flagship: "फ़्लैगशिप फ़ोन",
+  },
+  brands: {
+    hubLines: ["सभी", "ब्रांड।"],
+    hubLede: "हमारे पास मौजूद हर ब्रांड, कितने डिवाइस और कीमत की रेंज के साथ। पूरी लाइन-अप देखने के लिए कोई भी खोलें।",
+    counts: (laptops, phones) =>
+      [laptops ? `${laptops} लैपटॉप` : "", phones ? `${phones} फ़ोन` : ""].filter(Boolean).join(" · "),
+    range: (min, max) => `${formatPrice(min)} से ${formatPrice(max)}`,
+    lede: (brand, n) => `हमारे पास ${brand} के ${n} डिवाइस, सबसे सस्ते पहले। किसी को भी खोलकर देखें कि उसका स्कोर क्या है और क्यों।`,
+    laptops: "लैपटॉप",
+    phones: "फ़ोन",
+    allBrands: "सभी ब्रांड",
+    notFound: "यह ब्रांड अभी हमारे पास नहीं है",
   },
   landing: {
     eyebrow: "लैपटॉप और फ़ोन · भारत",
