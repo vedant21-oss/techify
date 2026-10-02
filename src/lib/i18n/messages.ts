@@ -7,8 +7,41 @@ type QuizText = Record<string, { question: string; options: Record<string, strin
 
 const en = {
   lang: { switchTo: "हिन्दी", switchLabel: "हिन्दी में देखें" },
+  sound: { on: "Sound on", off: "Sound off", turnOn: "Turn on the press sounds", turnOff: "Turn off the press sounds" },
+  compare: {
+    lines: ["Head", "to head."],
+    lede: "Pick any two devices and see them scored side by side — specs, match, value, and which one wins each job.",
+    vs: "vs",
+    slotLabel: (n: number) => `Device ${n}`,
+    placeholder: "Search a model, brand or chip",
+    hint: "Type at least two letters.",
+    noMatch: (q: string) => `Nothing matches “${q}”.`,
+    change: "Change",
+    addThird: "Add a third",
+    removeThird: "Remove",
+    go: "Compare",
+    pickTwo: "Pick two to compare.",
+    readyNote: (n: number) => (n === 2 ? "Two picked — ready." : `${n} picked — ready.`),
+    sameCategory: "Phones compare with phones, laptops with laptops.",
+  },
+  loading: {
+    // Each one names what is on its way, so a screen reader hears the destination
+    // rather than the word "loading" on every navigation.
+    results: "Ranking devices",
+    device: "Loading this device",
+    compare: "Building the comparison",
+    versus: "Setting up the head-to-head",
     bestLists: "Loading the best lists",
+    bestList: "Ranking this list",
     brands: "Loading brands",
+    brand: "Loading this brand",
+    deals: "Finding price drops",
+    picks: "Loading this week's picks",
+    upcoming: "Loading upcoming launches",
+    search: "Searching",
+    saved: "Loading your saved list",
+    page: "Loading the page",
+  },
   nav: {
     main: "Main",
     home: "Home",
@@ -30,8 +63,14 @@ const en = {
     upcoming: "Upcoming",
     howItWorks: "How it works",
     techifyPro: "Techify Pro",
+    compare: "Compare",
     bestLists: "Best lists",
     brands: "Brands",
+    about: "About",
+    faq: "FAQ",
+    contact: "Contact",
+    privacy: "Privacy",
+    terms: "Terms",
     footer: "Footer",
   },
   footer: {
@@ -450,6 +489,144 @@ const en = {
     allBrands: "All brands",
     notFound: "We don't track that brand yet",
   },
+  about: {
+    lines: ["Why", "Techify", "exists."],
+    lede: "Choosing a phone or laptop in India means ten open tabs, spec sheets that don't compare, and reviews that never say who a device is wrong for. Techify scores what you can actually check.",
+    sections: [
+      {
+        title: "One rule, applied to everything",
+        body: "Every device in your budget is scored on the same specs, with weights that change by what you'll use it for. No editor picks a winner. The score, the weights and the trade-offs are printed on every result.",
+      },
+      {
+        title: "Where the numbers come from",
+        body: "Prices are approximate Indian street prices, checked by hand and dated on every card. Performance tiers come from public benchmark standings. When a spec isn't listed, the device is scored as typical for its budget and the result says so.",
+      },
+      {
+        title: "How Techify makes money",
+        body: "Store links may carry an affiliate tag, and Techify Pro is a one-time payment for unlimited price alerts. Neither changes a single rank. No brand can pay to appear, and there are no sponsored placements anywhere in the catalogue.",
+      },
+      {
+        title: "Who builds it",
+        body: "Techify is built and maintained by Vedant Malode. The scoring engine is open to inspection: every weight and baseline is published on the How scoring works page.",
+      },
+    ],
+    cta: "See how scoring works",
+    contactCta: "Get in touch",
+  },
+  contact: {
+    lines: ["Say", "hello."],
+    lede: "A wrong price, a missing device, a bug, or an idea for something Techify should do. It all reaches the same inbox.",
+    name: "Your name",
+    email: "Your email",
+    subject: "What's it about?",
+    subjects: ["A wrong price", "A missing device", "A bug", "Something else"],
+    message: "Message",
+    placeholder: "Tell us what happened, and which device or page it was about.",
+    send: "Send message",
+    sending: "Sending",
+    sent: "Message sent",
+    sentNote: "Thanks. We read everything and reply when a reply is needed.",
+    error: "That didn't send. Check your connection and try again.",
+    tooShort: "Add a bit more detail so we can act on it.",
+    faqFirst: "Quicker answers",
+    faqNote: "Most questions about scores, prices and alerts are answered on the FAQ page.",
+    readFaq: "Read the FAQ",
+  },
+  faq: {
+    lines: ["Questions,", "answered."],
+    lede: "How the scores work, where prices come from, and what Techify does with your email.",
+    items: [
+      {
+        q: "How is the match score worked out?",
+        a: "Every spec becomes a 0 to 100 sub-score: half against the whole Indian market, half against the other devices in your budget. Each sub-score is multiplied by a weight that depends on what you'll use the device for, and the results add up. Miss a spec the job can't do without and the score is scaled down, by up to 35%.",
+      },
+      {
+        q: "What's the difference between match and value?",
+        a: "Match is how well the specs fit the job. Value is match points per rupee, rescaled so the best value in your budget scores 100. A cheap device can win on value while losing on match.",
+      },
+      {
+        q: "Where do the prices come from?",
+        a: "They're approximate Indian street prices, checked by hand. Every device page shows the date its price was last checked and where it came from. Prices move quickly, so always check the store before buying.",
+      },
+      {
+        q: "Is Techify free?",
+        a: "Yes. Rankings, comparisons, the quiz and the saved list are all free with no account. Techify Pro is a one-time payment that removes the limit on price alerts.",
+      },
+      {
+        q: "Do brands pay to rank higher?",
+        a: "No. There are no sponsored placements. Store links may carry an affiliate tag, which never affects a score or a rank.",
+      },
+      {
+        q: "How do price alerts work?",
+        a: "Set the price you'd happily pay on any device. Prices are checked daily, and you get one email when it reaches your target. Every email has a one-click stop link.",
+      },
+      {
+        q: "Do I need an account?",
+        a: "No. Everything works without one. An account syncs your saved list across devices, keeps your alerts in one place and keeps Pro with you when you log in elsewhere.",
+      },
+      {
+        q: "A price or spec is wrong. Can you fix it?",
+        a: "Yes, please tell us. Corrections are usually applied within a day, and a corrected price shows up in that device's price history.",
+      },
+    ],
+    stillStuck: "Still stuck?",
+    contact: "Send us a message",
+  },
+  legal: {
+    updated: (date: string) => `Last updated ${date}`,
+    privacyLines: ["Your", "privacy."],
+    privacyLede: "What Techify stores, why, and how to have it removed. In plain language, because you should be able to check it yourself.",
+    privacy: [
+      {
+        title: "What we store",
+        body: "An account stores your name, email and a hashed password. Nobody, including us, can read your password back. Price alerts store your email, the device and your target price. Launch emails store your email and the device. Reviews store your name, email and what you wrote.",
+      },
+      {
+        title: "What stays in your browser",
+        body: "Without an account, your saved list and recently viewed devices live in your browser's own storage and are never sent to us. Your language choice is a cookie. Logging in adds a session cookie so you stay signed in.",
+      },
+      {
+        title: "What we never store",
+        body: "Card, UPI and banking details. Payments go through Razorpay, and Techify only records that an order was paid. We don't sell or share your data with advertisers, and there are no third-party tracking scripts.",
+      },
+      {
+        title: "Who else sees it",
+        body: "Resend sends the emails you ask for. Razorpay processes payments. Our hosting provider runs the site and database. Each one only receives what its job needs.",
+      },
+      {
+        title: "Removing your data",
+        body: "Every alert email has a one-click stop link. You can stop alerts and launch emails from your account page at any time. To have an account and everything attached to it deleted, send a message from the contact page and it will be done.",
+      },
+    ],
+    termsLines: ["The", "terms."],
+    termsLede: "The short version: Techify is information, not advice, and prices change faster than any site can track.",
+    terms: [
+      {
+        title: "What Techify is",
+        body: "A scoring tool for laptops and phones sold in India. It ranks devices by how well published specs fit a stated use, and explains each result. It isn't a shop, and it doesn't sell devices.",
+      },
+      {
+        title: "Prices and specs",
+        body: "Prices are approximate street prices and are often out of date by the time you read them. Specs come from public sources and can contain errors. Always check the store's own page before buying. Techify isn't responsible for a purchase that turns out differently.",
+      },
+      {
+        title: "Store links",
+        body: "Links to Amazon and Flipkart may carry an affiliate tag, which can earn us a commission at no extra cost to you. Affiliate tags never affect scores or ranks.",
+      },
+      {
+        title: "Accounts",
+        body: "Keep your password to yourself and use a real email you can receive. We can suspend an account being used to send abuse or spam, or to submit fake reviews.",
+      },
+      {
+        title: "Techify Pro",
+        body: "Pro is a one-time payment that removes the alert limit. If a payment goes wrong or Pro doesn't activate, send a message from the contact page and it will be sorted out or refunded.",
+      },
+      {
+        title: "Changes",
+        body: "These terms and the privacy page change as Techify changes. The date at the top always shows the current version.",
+      },
+    ],
+  },
   landing: {
     eyebrow: "Laptops & phones · India",
     stats: (devices: number, min: number, max: number) => `${devices} devices · ${formatPrice(min)} to ${formatPrice(max)}`,
@@ -530,8 +707,39 @@ export type Messages = typeof en;
 
 const hi: Messages = {
   lang: { switchTo: "English", switchLabel: "View in English" },
+  sound: { on: "आवाज़ चालू", off: "आवाज़ बंद", turnOn: "छपाई की आवाज़ चालू करें", turnOff: "छपाई की आवाज़ बंद करें" },
+  compare: {
+    lines: ["आमने", "सामने।"],
+    lede: "कोई भी दो डिवाइस चुनिए और उन्हें साथ-साथ देखिए — स्पेक्स, मैच, वैल्यू, और हर काम में कौन आगे है।",
+    vs: "vs",
+    slotLabel: (n) => `डिवाइस ${n}`,
+    placeholder: "मॉडल, ब्रांड या चिप खोजें",
+    hint: "कम से कम दो अक्षर लिखें।",
+    noMatch: (q) => `“${q}” से कुछ नहीं मिला।`,
+    change: "बदलें",
+    addThird: "तीसरा जोड़ें",
+    removeThird: "हटाएँ",
+    go: "तुलना करें",
+    pickTwo: "तुलना के लिए दो चुनिए।",
+    readyNote: (n) => (n === 2 ? "दो चुने गए — तैयार।" : `${n} चुने गए — तैयार।`),
+    sameCategory: "फ़ोन की तुलना फ़ोन से, लैपटॉप की लैपटॉप से।",
+  },
+  loading: {
+    results: "डिवाइस रैंक हो रहे हैं",
+    device: "यह डिवाइस खुल रहा है",
+    compare: "तुलना तैयार हो रही है",
+    versus: "आमने-सामने की तुलना बन रही है",
     bestLists: "बेस्ट लिस्ट खुल रही हैं",
+    bestList: "यह लिस्ट रैंक हो रही है",
     brands: "ब्रांड खुल रहे हैं",
+    brand: "यह ब्रांड खुल रहा है",
+    deals: "दाम गिरने वाले डिवाइस खोजे जा रहे हैं",
+    picks: "इस हफ़्ते की पसंद खुल रही है",
+    upcoming: "आने वाले लॉन्च खुल रहे हैं",
+    search: "खोज हो रही है",
+    saved: "आपकी सेव लिस्ट खुल रही है",
+    page: "पेज खुल रहा है",
+  },
   nav: {
     main: "मुख्य",
     home: "होम",
@@ -553,8 +761,14 @@ const hi: Messages = {
     upcoming: "आने वाले",
     howItWorks: "यह कैसे काम करता है",
     techifyPro: "Techify Pro",
+    compare: "तुलना करें",
     bestLists: "बेस्ट लिस्ट",
     brands: "ब्रांड",
+    about: "हमारे बारे में",
+    faq: "सवाल-जवाब",
+    contact: "संपर्क",
+    privacy: "प्राइवेसी",
+    terms: "शर्तें",
     footer: "फ़ुटर",
   },
   footer: {
@@ -995,6 +1209,144 @@ const hi: Messages = {
     phones: "फ़ोन",
     allBrands: "सभी ब्रांड",
     notFound: "यह ब्रांड अभी हमारे पास नहीं है",
+  },
+  about: {
+    lines: ["Techify", "क्यों", "है।"],
+    lede: "भारत में फ़ोन या लैपटॉप चुनने का मतलब है दस खुले टैब, ऐसी स्पेक शीट जिनकी तुलना नहीं हो पाती, और ऐसे रिव्यू जो कभी नहीं बताते कि यह डिवाइस किसके लिए ठीक नहीं है। Techify वही स्कोर करता है जो आप ख़ुद जाँच सकें।",
+    sections: [
+      {
+        title: "एक ही नियम, सब पर लागू",
+        body: "आपके बजट के हर डिवाइस को एक ही स्पेक्स पर स्कोर किया जाता है, और वेटेज इस बात से बदलता है कि आप उसका क्या करेंगे। कोई एडिटर विजेता नहीं चुनता। स्कोर, वेटेज और कमियाँ हर नतीजे पर लिखी होती हैं।",
+      },
+      {
+        title: "ये आँकड़े कहाँ से आते हैं",
+        body: "कीमतें भारत के बाज़ार भाव के आसपास हैं, हाथ से जाँची जाती हैं, और हर कार्ड पर तारीख लिखी होती है। परफ़ॉर्मेंस के स्तर सार्वजनिक बेंचमार्क से आते हैं। जो स्पेक लिस्टेड नहीं होता, उसे उस बजट का औसत मानकर स्कोर किया जाता है और नतीजे में यह साफ़ लिखा होता है।",
+      },
+      {
+        title: "Techify कमाता कैसे है",
+        body: "स्टोर लिंक में एफ़िलिएट टैग हो सकता है, और Techify Pro असीमित कीमत अलर्ट के लिए एक बार का भुगतान है। इनमें से कोई भी किसी रैंक को नहीं बदलता। कोई ब्रांड पैसे देकर आगे नहीं आ सकता, और पूरे कैटलॉग में कहीं भी स्पॉन्सर्ड जगह नहीं है।",
+      },
+      {
+        title: "बनाता कौन है",
+        body: "Techify को वेदांत मालोदे बनाते और सँभालते हैं। स्कोरिंग इंजन खुला है: हर वेटेज और न्यूनतम ज़रूरत \"स्कोरिंग कैसे होती है\" पेज पर दी गई है।",
+      },
+    ],
+    cta: "स्कोरिंग कैसे होती है, देखें",
+    contactCta: "संपर्क करें",
+  },
+  contact: {
+    lines: ["नमस्ते", "कहें।"],
+    lede: "ग़लत कीमत, छूटा हुआ डिवाइस, कोई बग, या कोई सुझाव कि Techify को क्या करना चाहिए। सब एक ही इनबॉक्स में पहुँचता है।",
+    name: "आपका नाम",
+    email: "आपका ईमेल",
+    subject: "किस बारे में है?",
+    subjects: ["ग़लत कीमत", "छूटा हुआ डिवाइस", "कोई बग", "कुछ और"],
+    message: "संदेश",
+    placeholder: "बताइए क्या हुआ, और किस डिवाइस या पेज के बारे में है।",
+    send: "संदेश भेजें",
+    sending: "भेज रहे हैं",
+    sent: "संदेश भेज दिया",
+    sentNote: "धन्यवाद। हम सब पढ़ते हैं और ज़रूरत होने पर जवाब देते हैं।",
+    error: "संदेश नहीं गया। इंटरनेट देखकर फिर कोशिश करें।",
+    tooShort: "थोड़ा और बताइए ताकि हम कुछ कर सकें।",
+    faqFirst: "जल्दी जवाब",
+    faqNote: "स्कोर, कीमत और अलर्ट के ज़्यादातर सवालों के जवाब FAQ पेज पर हैं।",
+    readFaq: "FAQ पढ़ें",
+  },
+  faq: {
+    lines: ["सवाल,", "जवाब।"],
+    lede: "स्कोर कैसे बनता है, कीमतें कहाँ से आती हैं, और Techify आपके ईमेल का क्या करता है।",
+    items: [
+      {
+        q: "मैच स्कोर कैसे निकलता है?",
+        a: "हर स्पेक 0 से 100 का सब-स्कोर बनता है: आधा पूरे भारतीय बाज़ार के मुकाबले, आधा आपके बजट के बाकी डिवाइसों के मुकाबले। हर सब-स्कोर को उस काम के हिसाब से वेटेज से गुणा करके जोड़ा जाता है। अगर काम की कोई ज़रूरी स्पेक कम है, तो स्कोर 35% तक घटा दिया जाता है।",
+      },
+      {
+        q: "मैच और वैल्यू में क्या फ़र्क है?",
+        a: "मैच बताता है कि स्पेक्स उस काम के लिए कितने सही हैं। वैल्यू है हर रुपये पर मिलने वाले मैच पॉइंट, जिसमें आपके बजट का सबसे पैसा-वसूल डिवाइस 100 होता है। सस्ता डिवाइस वैल्यू में जीत सकता है और मैच में पीछे रह सकता है।",
+      },
+      {
+        q: "कीमतें कहाँ से आती हैं?",
+        a: "ये भारत के बाज़ार भाव के आसपास हैं और हाथ से जाँची जाती हैं। हर डिवाइस पेज पर लिखा होता है कि कीमत कब और कहाँ से जाँची गई। कीमतें तेज़ी से बदलती हैं, इसलिए ख़रीदने से पहले स्टोर पर ज़रूर देखें।",
+      },
+      {
+        q: "क्या Techify मुफ़्त है?",
+        a: "हाँ। रैंकिंग, तुलना, क्विज़ और सेव लिस्ट सब बिना अकाउंट के मुफ़्त हैं। Techify Pro एक बार का भुगतान है जो कीमत अलर्ट की सीमा हटा देता है।",
+      },
+      {
+        q: "क्या ब्रांड पैसे देकर ऊपर आते हैं?",
+        a: "नहीं। कहीं भी स्पॉन्सर्ड जगह नहीं है। स्टोर लिंक में एफ़िलिएट टैग हो सकता है, जिससे किसी स्कोर या रैंक पर कोई असर नहीं पड़ता।",
+      },
+      {
+        q: "कीमत अलर्ट कैसे काम करते हैं?",
+        a: "किसी भी डिवाइस पर वह कीमत लगाइए जो आप ख़ुशी से देंगे। कीमतें रोज़ जाँची जाती हैं, और टारगेट पर पहुँचते ही आपको एक ईमेल आता है। हर ईमेल में एक क्लिक में बंद करने का लिंक होता है।",
+      },
+      {
+        q: "क्या अकाउंट ज़रूरी है?",
+        a: "नहीं। सब कुछ बिना अकाउंट के चलता है। अकाउंट से आपकी सेव लिस्ट हर डिवाइस पर सिंक होती है, सारे अलर्ट एक जगह दिखते हैं, और कहीं भी लॉग इन करने पर Pro साथ रहता है।",
+      },
+      {
+        q: "कोई कीमत या स्पेक ग़लत है, ठीक कर देंगे?",
+        a: "हाँ, हमें ज़रूर बताइए। सुधार आमतौर पर एक दिन में लागू हो जाता है, और बदली हुई कीमत उस डिवाइस के कीमत इतिहास में दिखती है।",
+      },
+    ],
+    stillStuck: "फिर भी अटके हैं?",
+    contact: "हमें संदेश भेजें",
+  },
+  legal: {
+    updated: (date) => `आख़िरी बदलाव ${date}`,
+    privacyLines: ["आपकी", "प्राइवेसी।"],
+    privacyLede: "Techify क्या रखता है, क्यों रखता है, और उसे हटवाने का तरीका। आसान भाषा में, ताकि आप ख़ुद जाँच सकें।",
+    privacy: [
+      {
+        title: "हम क्या रखते हैं",
+        body: "अकाउंट में आपका नाम, ईमेल और पासवर्ड का हैश रखा जाता है। आपका पासवर्ड कोई नहीं पढ़ सकता, हम भी नहीं। कीमत अलर्ट में आपका ईमेल, डिवाइस और टारगेट कीमत रहती है। लॉन्च ईमेल में आपका ईमेल और डिवाइस। रिव्यू में आपका नाम, ईमेल और आपका लिखा हुआ।",
+      },
+      {
+        title: "क्या आपके ब्राउज़र में ही रहता है",
+        body: "बिना अकाउंट के आपकी सेव लिस्ट और हाल में देखे डिवाइस आपके ब्राउज़र में ही रहते हैं, हम तक नहीं आते। भाषा की पसंद एक कुकी है। लॉग इन करने पर एक सेशन कुकी जुड़ती है ताकि आप लॉग इन रहें।",
+      },
+      {
+        title: "हम क्या कभी नहीं रखते",
+        body: "कार्ड, UPI और बैंकिंग की जानकारी। भुगतान Razorpay से होता है, और Techify सिर्फ़ यह दर्ज करता है कि ऑर्डर का भुगतान हुआ। हम आपका डेटा विज्ञापन देने वालों को न बेचते हैं न देते हैं, और यहाँ कोई ट्रैकिंग स्क्रिप्ट नहीं है।",
+      },
+      {
+        title: "और कौन देखता है",
+        body: "Resend वही ईमेल भेजता है जो आप माँगते हैं। Razorpay भुगतान करता है। हमारा होस्टिंग प्रदाता साइट और डेटाबेस चलाता है। हर एक को उतना ही मिलता है जितना उसके काम के लिए ज़रूरी है।",
+      },
+      {
+        title: "अपना डेटा हटवाना",
+        body: "हर अलर्ट ईमेल में एक क्लिक में बंद करने का लिंक होता है। अलर्ट और लॉन्च ईमेल आप अपने अकाउंट पेज से कभी भी बंद कर सकते हैं। अकाउंट और उससे जुड़ी हर चीज़ हटवाने के लिए संपर्क पेज से संदेश भेजें, हम हटा देंगे।",
+      },
+    ],
+    termsLines: ["शर्तें।"],
+    termsLede: "छोटी बात यह है: Techify जानकारी देता है, सलाह नहीं, और कीमतें किसी भी साइट के ट्रैक करने से तेज़ बदलती हैं।",
+    terms: [
+      {
+        title: "Techify है क्या",
+        body: "भारत में बिकने वाले लैपटॉप और फ़ोन के लिए एक स्कोरिंग टूल। यह बताता है कि बताए गए काम के लिए किस डिवाइस की स्पेक्स कितनी सही हैं, और हर नतीजे की वजह समझाता है। यह दुकान नहीं है और डिवाइस नहीं बेचता।",
+      },
+      {
+        title: "कीमतें और स्पेक्स",
+        body: "कीमतें बाज़ार भाव के आसपास हैं और आपके पढ़ने तक अक्सर पुरानी हो चुकी होती हैं। स्पेक्स सार्वजनिक स्रोतों से आती हैं और उनमें ग़लती हो सकती है। ख़रीदने से पहले स्टोर का अपना पेज ज़रूर देखें। कोई ख़रीद अलग निकलने पर Techify ज़िम्मेदार नहीं है।",
+      },
+      {
+        title: "स्टोर लिंक",
+        body: "Amazon और Flipkart के लिंक में एफ़िलिएट टैग हो सकता है, जिससे हमें कमीशन मिल सकता है और आप पर कोई अतिरिक्त खर्च नहीं आता। एफ़िलिएट टैग से स्कोर या रैंक कभी नहीं बदलते।",
+      },
+      {
+        title: "अकाउंट",
+        body: "अपना पासवर्ड अपने पास रखें और ऐसा ईमेल इस्तेमाल करें जो सच में आपका हो। गाली-गलौज, स्पैम या नक़ली रिव्यू भेजने वाले अकाउंट को हम रोक सकते हैं।",
+      },
+      {
+        title: "Techify Pro",
+        body: "Pro एक बार का भुगतान है जो अलर्ट की सीमा हटाता है। भुगतान में कोई गड़बड़ हो या Pro चालू न हो, तो संपर्क पेज से संदेश भेजें; हम ठीक कर देंगे या पैसे लौटा देंगे।",
+      },
+      {
+        title: "बदलाव",
+        body: "Techify बदलेगा तो ये शर्तें और प्राइवेसी पेज भी बदलेंगे। ऊपर लिखी तारीख हमेशा मौजूदा संस्करण बताती है।",
+      },
+    ],
   },
   landing: {
     eyebrow: "लैपटॉप और फ़ोन · भारत",

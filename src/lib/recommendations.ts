@@ -22,6 +22,7 @@ import {
 } from "@/lib/engine";
 import type {
   BrandSummary,
+  ComparableDevice,
   ComparisonResponse,
   DealItem,
   DeviceDetailResponse,
@@ -409,6 +410,19 @@ export const getPicks = cache(async (now: Date = new Date(), lang: Lang = "en"):
     }
   }
   return results;
+});
+
+/**
+ * Every device, trimmed to what the comparison picker searches and shows. The whole
+ * catalogue goes to the browser so picking stays instant and needs no round trip;
+ * at a hundred-odd devices that is a few kilobytes.
+ */
+export const getComparableDevices = cache(async (): Promise<ComparableDevice[]> => {
+  const records = await prisma.device.findMany({
+    orderBy: [{ brand: "asc" }, { price: "asc" }],
+    select: { slug: true, category: true, brand: true, name: true, variant: true, price: true, cpuName: true, gpuName: true },
+  });
+  return records.map((r) => ({ ...r, category: fromDbCategory(r.category) }));
 });
 
 export async function searchCatalog(query: string): Promise<DeviceDTO[]> {

@@ -160,6 +160,10 @@
   letter-spacing: 0;
   line-height: 1.5;
 }
+.plate-wrap .plate {
+  white-space: normal;
+}
+
 :lang(hi) .plate {
   font-size: 0.66em;
   white-space: normal;
@@ -414,9 +418,101 @@ html.reveal-armed [data-reveal] {
   }
 }
 
+/* ---- Loading: skeletons and the navigation rule --------------------------------- */
+/*
+ * Skeletons read as unprinted plates: a flat block of deep paper with one pass of
+ * ink sweeping across, rather than a soft grey pulse. Sized by the caller so each
+ * one stands where its real content will.
+ */
+.skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--paper-deep);
+}
+.skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(29 31 207 / 0.09) 45%, rgb(255 63 164 / 0.12) 55%, transparent);
+  transform: translateX(-100%);
+  animation: skel-sweep 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+/* Staggered so a column of rows sweeps in sequence instead of pulsing as one block. */
+.skel-stagger > * {
+  animation: skel-fade 0.5s ease both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+@keyframes skel-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes skel-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/*
+ * The navigation rule: one pink line across the very top while a page is on its
+ * way. It creeps towards 90% on its own, then `is-done` snaps it out to full and
+ * fades, so the bar always resolves instead of vanishing mid-travel.
+ */
+.nav-rule {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  height: 3px;
+  width: 100%;
+  transform-origin: 0 50%;
+  background: var(--pink);
+  transform: scaleX(0);
+  opacity: 0;
+}
+.nav-rule[data-phase="running"] {
+  opacity: 1;
+  animation: nav-creep 8s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+}
+.nav-rule[data-phase="done"] {
+  opacity: 1;
+  animation: nav-finish 0.24s ease-out forwards;
+}
+@keyframes nav-creep {
+  0% {
+    transform: scaleX(0);
+  }
+  12% {
+    transform: scaleX(0.38);
+  }
+  40% {
+    transform: scaleX(0.68);
+  }
+  100% {
+    transform: scaleX(0.9);
+  }
+}
+@keyframes nav-finish {
+  to {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .intro {
     display: none;
+  }
+  /* Keep the shape, drop the movement: a still plate still reads as "not yet here". */
+  .skel::after {
+    display: none;
+  }
+  /* No travelling bar; it just sits there while the page is on its way. */
+  .nav-rule[data-phase="running"] {
+    animation: none;
+    transform: scaleX(1);
+    opacity: 0.5;
   }
   html.reveal-armed [data-reveal]:not(.revealed) {
     opacity: 1;

@@ -2,12 +2,15 @@ import { ArrowLeft, X } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BuyButtons } from "@/components/buy-buttons";
+import { ComparePicker } from "@/app/compare/compare-picker";
+import { PageHero } from "@/components/page-hero";
+import { getMessages } from "@/lib/i18n/server";
 import { displayName, specRows } from "@/components/device-meta";
 import { ScoreBar } from "@/components/score-bar";
 import { UseCaseSwitcher } from "@/components/use-case-switcher";
 import { formatBudgetShort, formatPrice } from "@/lib/engine";
 import { compareSchema } from "@/lib/query";
-import { getComparison } from "@/lib/recommendations";
+import { getComparableDevices, getComparison } from "@/lib/recommendations";
 import type { RecommendationItem } from "@/lib/types";
 import { finderHref, toSearchParams, versusHref } from "@/lib/url";
 import { cn } from "@/lib/utils";
@@ -16,9 +19,7 @@ export const metadata: Metadata = { title: "Compare" };
 
 export default async function ComparePage({ searchParams }: PageProps<"/compare">) {
   const parsed = compareSchema.safeParse(await searchParams);
-  if (!parsed.success) {
-    return <Message title="Pick devices to compare">Tick “Compare” on two or three devices in your results.</Message>;
-  }
+  if (!parsed.success) return <ComparePage_Empty />;
 
   const { slugs, ...context } = parsed.data;
   const result = await getComparison(slugs, context);
@@ -233,6 +234,27 @@ function ScoreCell({
         <span className="truncate text-sm text-ink-soft">{note}</span>
       </div>
       <ScoreBar score={score} tone={tone} className="mt-3" />
+    </div>
+  );
+}
+
+
+/**
+ * The comparison page with nothing chosen yet: the place a comparison starts.
+ *
+ * /compare and /vs are otherwise only reachable from inside the finder, so without
+ * this the page is a dead end for anyone who arrives by typing the URL, following a
+ * link, or landing from search.
+ */
+async function ComparePage_Empty() {
+  const [t, devices] = await Promise.all([getMessages(), getComparableDevices()]);
+  return (
+    <div className="pb-24">
+      <PageHero id="compare-title" lines={t.compare.lines} lede={t.compare.lede} size="sm" />
+      <div className="mx-auto max-w-6xl px-(--gutter) pt-12">
+        <ComparePicker devices={devices} />
+        <p className="mt-8 label-mono text-ink-soft">{t.compare.sameCategory}</p>
+      </div>
     </div>
   );
 }

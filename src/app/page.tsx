@@ -73,12 +73,14 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <div className="mt-9 flex flex-wrap gap-4">
                 <Link
                   href="/phones"
+                  data-sound
                   className="flex items-center gap-3 border-[3px] border-ink bg-ink px-6 py-4 font-heading text-2xl font-black uppercase text-paper shadow-[6px_6px_0_var(--pink)] transition-[transform,box-shadow] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[9px_9px_0_var(--pink)] active:translate-x-1 active:translate-y-1 active:shadow-none"
                 >
                   <Smartphone className="size-6" aria-hidden /> {t.landing.findPhone}
                 </Link>
                 <Link
                   href="/laptops"
+                  data-sound
                   className="flex items-center gap-3 border-[3px] border-ink bg-paper px-6 py-4 font-heading text-2xl font-black uppercase shadow-[6px_6px_0_var(--ink)] transition-[transform,box-shadow] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[9px_9px_0_var(--ink)] active:translate-x-1 active:translate-y-1 active:shadow-none"
                 >
                   <Laptop className="size-6" aria-hidden /> {t.landing.findLaptop}
@@ -170,6 +172,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <li key={title} data-reveal style={{ "--reveal-delay": i % 3 } as React.CSSProperties}>
                 <Link
                   href={href}
+                  data-sound
                   className="group flex h-full flex-col border-[3px] border-ink bg-paper transition-[transform,box-shadow] duration-200 hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[8px_8px_0_var(--pink)]"
                 >
                   <div className="flex flex-1 flex-col gap-4 p-6">
@@ -227,6 +230,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </div>
             <Link
               href="/pro"
+              data-sound
               className="flex items-center justify-between gap-3 border-t-[3px] border-paper bg-pink px-7 py-5 font-heading text-3xl font-black uppercase text-ink-deep transition-colors hover:bg-paper sm:px-10"
             >
               {t.landing.getPro} <ArrowRight className="size-7" aria-hidden />
@@ -247,6 +251,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <Link
                 key={id}
                 href={finderHref({ category: id })}
+                data-sound
                 data-reveal
                 style={{ "--reveal-delay": i } as React.CSSProperties}
                 className="group flex flex-col border-[3px] border-ink bg-paper transition-[transform,box-shadow] duration-200 hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0_var(--pink)]"

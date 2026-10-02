@@ -131,6 +131,22 @@ export interface VersusResponse {
   wins: { a: number; b: number; tie: number };
 }
 
+/**
+ * The little a comparison picker needs: enough to search on and enough to show.
+ * Deliberately not a DeviceDTO — the whole catalogue is sent to the browser, so it
+ * carries the search fields and nothing else.
+ */
+export interface ComparableDevice {
+  slug: string;
+  category: Category;
+  brand: string;
+  name: string;
+  variant: string;
+  price: number;
+  cpuName: string;
+  gpuName: string | null;
+}
+
 export interface BrandSummary {
   brand: string;
   slug: string;

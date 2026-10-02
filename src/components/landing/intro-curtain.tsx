@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useMessages } from "@/components/lang-provider";
+import { useSound } from "@/components/sound-provider";
+import { playIntro, stopAll } from "@/lib/sound";
 
 /** When the intro is fully gone; the sheet starts lifting at 3.6s. Mirrored in globals.css. */
 const INTRO_TOTAL_MS = 4700;
@@ -25,9 +27,15 @@ function Mark({ className }: { className: string }) {
  * Plays whenever the home page opens, can be skipped with a click or any key, and
  * is skipped entirely with reduced motion. The animation itself is pure CSS, so the
  * page still reveals itself if JavaScript never runs.
+ *
+ * With sound on, the press is scored to match: the plate knocks, the roller sweeps,
+ * the proof counter ratchets and the sheet pulls away. A browser won't let a page
+ * make noise before it has been touched, so on a cold load the print may well run
+ * silent; replaying it from the logo is a click, and that one always plays.
  */
 export function IntroCurtain() {
   const t = useMessages().landing.intro;
+  const { enabled } = useSound();
   const [run, setRun] = useState(0);
   const [done, setDone] = useState(false);
 
@@ -45,6 +53,16 @@ export function IntroCurtain() {
       root.classList.remove("intro-playing");
     };
   }, [done, run]);
+
+  // Kept apart from the timing above so turning sound on can't restart the intro.
+  // The cues go in one go on the audio clock, where they can't drift off the frames
+  // the CSS animates; skipping cuts the queue instead of letting it play out.
+  useEffect(() => {
+    if (done || !enabled) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    playIntro();
+    return stopAll;
+  }, [done, enabled, run]);
 
   useEffect(() => {
     const replay = () => {

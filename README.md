@@ -36,6 +36,8 @@ The engine lives in [`src/lib/engine`](src/lib/engine). It's a framework-free Ty
 - **Hindi**: the language switch in the header translates navigation, the finder, device pages, the quiz, picks, deals, upcoming launches and the landing page. The engine's explanations are phrased in Hindi from the same selected points, so both languages always agree. Compare, head-to-head, search, saved, Pro, how-it-works and admin pages stay in English, as do device names and spec values.
 - **Best lists** (`/best`): ready-made shortlists like `/best/phones-under-20000` and `/best/gaming-laptops-under-90000`, each one a saved finder query, so the ranking updates itself as prices change.
 - **Brand pages** (`/brands`, `/brand/apple`): every device tracked for a brand, cheapest first, with the price range on the hub.
+- **About, FAQ, Contact, Privacy and Terms** pages. The contact form emails `CONTACT_EMAIL` (or `ALERTS_FROM_EMAIL`), and prints to the server log when neither is set.
+- **Press sounds**: the speaker button in the header scores the landing page's opening print — the plate knocks, the ink roller sweeps, the proof counter ratchets along its own easing curve and the sheet pulls away — plus a tick and knock on the hero buttons and cards. Everything is synthesized with Web Audio, so there are no audio files to download. Off by default, remembered per browser, and skipped with reduced motion.
 - **Accounts** (`/login`, `/signup`, `/account`): email and password. Logging in syncs the saved list and recently viewed across devices, lists every price alert and launch email with a stop button, keeps Pro with the account, and writes reviews under the account name. Alerts and Pro bought with an email only attach once that email is confirmed through the link sent at sign-up. Passwords are hashed with scrypt, sessions are random tokens stored only as hashes, five wrong passwords lock the account for 15 minutes, and password reset links expire after an hour and work once. Without Resend configured, confirmation and reset emails are printed to the server log.
 - **Affiliate links**: set `AMAZON_ASSOCIATE_TAG` / `FLIPKART_AFFILIATE_ID` and store links carry them with `rel="sponsored"`. Rankings never use them.
 
@@ -81,6 +83,7 @@ npm run lint
 | `POST /api/alerts` `{"email", "slug", "targetPrice"}` | Create or update a price-drop alert |
 | `GET /api/cron/price-alerts` | Send due alert emails (`Authorization: Bearer $CRON_SECRET` in production) |
 | `POST /api/pro/order` `{"email"}` / `POST /api/pro/verify` | Razorpay order and signature verification for Pro |
+| `POST /api/contact` `{"name", "email", "subject", "message"}` | Message from the contact form |
 | `POST /api/reviews` `{"slug", "name", "email", "rating", "title", "body", "usedFor", "ownedMonths"}` | Submit an owner review (held for moderation) |
 | `POST /api/upcoming/subscribe` `{"slug", "email"}` | One-time launch email for an upcoming device |
 | `GET/POST/PUT /api/account/lists` | Logged-in saved list and history: read, merge this browser's lists, replace one list |
@@ -122,6 +125,7 @@ You need a Vercel account and a hosted Postgres database. Neon's free tier works
    | `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET` | `/admin` (locked until set) |
    | `CRON_SECRET` | The daily price-alert job (Vercel sends it automatically) |
    | `RESEND_API_KEY`, `ALERTS_FROM_EMAIL` | Sending alert and launch emails |
+   | `CONTACT_EMAIL` | Where contact-form messages go |
    | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `TECHIFY_PRO_PRICE_INR` | Pro payments |
    | `ANTHROPIC_API_KEY` | Claude reading free-text searches (keyword parser otherwise) |
    | `AMAZON_ASSOCIATE_TAG`, `FLIPKART_AFFILIATE_ID` | Affiliate store links |

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { HomeLink } from "@/components/home-link";
 import { LanguageToggle } from "@/components/lang-provider";
 import { SavedNavLink } from "@/components/saved-controls";
+import { SoundToggle } from "@/components/sound-provider";
 import { getMessages } from "@/lib/i18n/server";
 import { getCurrentUser } from "@/lib/server/auth";
 
@@ -29,6 +30,7 @@ export async function SiteHeader() {
     { href: "/quiz", label: t.nav.quiz },
   ];
   const exploreLinks = [
+    { href: "/compare", label: t.nav.compare },
     { href: "/best", label: t.nav.bestLists },
     { href: "/brands", label: t.nav.brands },
     { href: "/picks", label: t.nav.picksOfWeek },
@@ -64,6 +66,7 @@ export async function SiteHeader() {
               </div>
             </details>
             <SavedNavLink className={cell} />
+            <SoundToggle className={cell} />
             <LanguageToggle className={cell} />
           </nav>
 
@@ -82,6 +85,7 @@ export async function SiteHeader() {
               <Search className="size-4" />
             </button>
           </form>
+          <SoundToggle className={`${cell} md:hidden`} />
           <LanguageToggle className={`${cell} md:hidden`} />
           <Link href="/search" aria-label={t.nav.searchModels} className={`${cell} lg:hidden`}>
             <Search className="size-4" />

@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Big_Shoulders, IBM_Plex_Mono, Noto_Sans_Devanagari, Schibsted_Grotesk, Teko } from "next/font/google";
 import { LangProvider } from "@/components/lang-provider";
+import { NavProgress } from "@/components/nav-progress";
 import { SessionProvider } from "@/components/session-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { SoundProvider } from "@/components/sound-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LOCALE } from "@/lib/i18n/config";
 import { getLang } from "@/lib/i18n/server";
@@ -38,9 +40,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <LangProvider lang={lang}>
           <SessionProvider user={sessionUser}>
             <TooltipProvider delayDuration={150}>
-              <SiteHeader />
-              <main className="flex-1">{children}</main>
-              <SiteFooter />
+              <SoundProvider>
+                <NavProgress />
+                <SiteHeader />
+                <main className="flex-1">{children}</main>
+                <SiteFooter />
+              </SoundProvider>
             </TooltipProvider>
           </SessionProvider>
         </LangProvider>
