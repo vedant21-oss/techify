@@ -12,12 +12,28 @@ export function priceProvenance(device: Pick<DeviceDTO, "priceCheckedOn" | "pric
   return device.priceSource ? `${checked} · ${device.priceSource}` : checked;
 }
 
-function battery(device: DeviceDTO): string | null {
+/** What the spec helpers read; older devices in the upgrade checker have no price or links. */
+type SpecSource = Pick<
+  DeviceDTO,
+  | "category"
+  | "cpuName"
+  | "gpuName"
+  | "cameraName"
+  | "displayName"
+  | "ramGb"
+  | "storageGb"
+  | "batteryCapacity"
+  | "chargingWatts"
+  | "weightGrams"
+  | "releaseYear"
+>;
+
+function battery(device: SpecSource): string | null {
   if (device.batteryCapacity === null) return null;
   return device.category === "laptop" ? `${device.batteryCapacity} Wh` : `${formatNumber(device.batteryCapacity)} mAh`;
 }
 
-function weight(device: DeviceDTO): string | null {
+function weight(device: SpecSource): string | null {
   if (device.weightGrams === null) return null;
   return formatWeight(device.weightGrams, device.category === "laptop" ? "kg" : "g");
 }
@@ -27,7 +43,7 @@ export function displayName(device: Pick<DeviceDTO, "brand" | "name">): string {
 }
 
 /** The handful of specs worth showing at a glance on a result card. */
-export function keySpecs(device: DeviceDTO): string[] {
+export function keySpecs(device: SpecSource): string[] {
   const memory = `${device.ramGb} GB · ${formatStorage(device.storageGb)}`;
   if (device.category === "laptop") {
     return [device.cpuName, device.gpuName, memory, weight(device)].filter((s): s is string => Boolean(s));
@@ -42,7 +58,7 @@ export function keySpecs(device: DeviceDTO): string[] {
 }
 
 /** Full labelled spec list for detail and compare views. */
-export function specRows(device: DeviceDTO, lang: Lang = "en"): { label: string; value: string }[] {
+export function specRows(device: SpecSource, lang: Lang = "en"): { label: string; value: string }[] {
   const t = MESSAGES[lang].specs;
   const rows = [
     { label: t.processor, value: device.cpuName },

@@ -17,7 +17,7 @@ export function RegisterMark({ className }: { className?: string }) {
   );
 }
 
-const cell = "flex shrink-0 items-center border-l-[3px] border-ink px-4 label-mono transition-colors hover:bg-ink hover:text-paper lg:px-5";
+const cell = "flex shrink-0 items-center border-l-[3px] border-ink px-4 label-mono transition-colors hover:bg-ink hover:text-paper xl:px-5";
 const mobileLink = "shrink-0 border-r border-ink px-4 py-2.5 label-mono hover:bg-pink-tint";
 
 export async function SiteHeader() {
@@ -31,6 +31,7 @@ export async function SiteHeader() {
   ];
   const exploreLinks = [
     { href: "/compare", label: t.nav.compare },
+    { href: "/upgrade", label: t.nav.upgrade },
     { href: "/best", label: t.nav.bestLists },
     { href: "/brands", label: t.nav.brands },
     { href: "/picks", label: t.nav.picksOfWeek },
@@ -48,7 +49,7 @@ export async function SiteHeader() {
         </HomeLink>
 
         <div className="flex items-stretch">
-          <nav aria-label={t.nav.main} className="hidden items-stretch md:flex">
+          <nav aria-label={t.nav.main} className="hidden items-stretch lg:flex">
             <HomeLink className={cell}>{t.nav.home}</HomeLink>
             {links.map((l) => (
               <Link key={l.href} href={l.href} className={cell}>
@@ -70,7 +71,7 @@ export async function SiteHeader() {
             <LanguageToggle className={cell} />
           </nav>
 
-          <form action="/search" role="search" className="hidden items-stretch border-l-[3px] border-ink lg:flex">
+          <form action="/search" role="search" className="hidden items-stretch border-l-[3px] border-ink xl:flex">
             <label htmlFor="header-search" className="sr-only">
               {t.nav.searchModels}
             </label>
@@ -79,30 +80,30 @@ export async function SiteHeader() {
               name="q"
               type="search"
               placeholder={t.nav.searchModels}
-              className="w-40 bg-transparent px-4 text-sm outline-none placeholder:text-ink-soft focus:bg-pink-tint xl:w-52"
+              className="w-36 bg-transparent px-4 text-sm outline-none placeholder:text-ink-soft focus:bg-pink-tint xl:w-40"
             />
             <button type="submit" aria-label={t.nav.search} className="px-3 hover:bg-ink hover:text-paper">
               <Search className="size-4" />
             </button>
           </form>
-          <SoundToggle className={`${cell} md:hidden`} />
-          <LanguageToggle className={`${cell} md:hidden`} />
-          <Link href="/search" aria-label={t.nav.searchModels} className={`${cell} lg:hidden`}>
+          <Link href="/search" aria-label={t.nav.searchModels} className={`${cell} xl:hidden`}>
             <Search className="size-4" />
           </Link>
 
           <Link href={accountHref} aria-label={user ? `${t.auth.account}: ${user.name}` : undefined} className={`${cell} gap-2`}>
             <CircleUserRound className="size-4" aria-hidden />
-            <span className="hidden xl:inline">{user ? user.name.split(" ")[0] : accountLabel}</span>
-            <span className="sr-only xl:hidden">{accountLabel}</span>
+            {/* Text labels only where the row has room for them; the icons carry it below that. */}
+            <span className="hidden 2xl:inline">{user ? user.name.split(" ")[0] : accountLabel}</span>
+            <span className="sr-only 2xl:hidden">{accountLabel}</span>
           </Link>
-          <Link href="/pro" className="flex items-center border-l-[3px] border-ink bg-pink px-4 label-mono text-ink-deep hover:bg-ink hover:text-paper lg:px-5">
+          <Link href="/pro" className="flex items-center border-l-[3px] border-ink bg-pink px-4 label-mono text-ink-deep hover:bg-ink hover:text-paper xl:px-5">
             {t.nav.pro}
           </Link>
         </div>
       </div>
 
-      <nav aria-label={t.nav.main} className="flex overflow-x-auto border-t border-ink md:hidden">
+      {/* Phones and tablets: the desktop row doesn't fit below lg, so links scroll in their own row. */}
+      <nav aria-label={t.nav.main} className="flex overflow-x-auto border-t border-ink lg:hidden">
         <HomeLink className={mobileLink}>{t.nav.home}</HomeLink>
         {links.map((l) => (
           <Link key={l.href} href={l.href} className={mobileLink}>
@@ -115,6 +116,9 @@ export async function SiteHeader() {
             {l.label}
           </Link>
         ))}
+        {/* The settings ride at the end of the row; the top bar has no room for them on a phone. */}
+        <SoundToggle className={`${mobileLink} flex items-center gap-2`} />
+        <LanguageToggle className={mobileLink} />
       </nav>
     </header>
   );

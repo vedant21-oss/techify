@@ -7,6 +7,8 @@ export const metadata = { robots: { index: false } };
 const tabs = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/prices", label: "Prices" },
+  { href: "/admin/offers", label: "Offers" },
+  { href: "/admin/ads", label: "Ads" },
   { href: "/admin/reviews", label: "Reviews" },
   { href: "/admin/upcoming", label: "Upcoming" },
 ];

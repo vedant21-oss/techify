@@ -10,6 +10,8 @@ import type {
   Verdict,
   WeightMap,
 } from "@/lib/engine";
+import type { CardOffer, Payment, PaymentQuote } from "@/lib/features/offers";
+import type { FactorChange, UpgradeLevel } from "@/lib/features/upgrade";
 import type { PriceSummary } from "@/lib/features/price-history";
 
 /** A device as sent to the browser. */
@@ -45,6 +47,8 @@ export interface RecommendationItem {
   matchRank: number;
   valueRank: number;
   inBudget: boolean;
+  /** What the buyer pays with the card they chose; null when no card is chosen. */
+  payment: PaymentQuote | null;
   penalties: BaselinePenalty[];
   breakdown: FactorScore[];
   explanation: Explanation;
@@ -61,6 +65,8 @@ export interface ScoringQuery {
   effectiveWeights: WeightMap;
   mustHaves: string[];
   custom: boolean;
+  /** The buyer's card. When set, prices (and so budget and value) are after its best offer. */
+  payment: Payment | null;
 }
 
 export interface RecommendationResponse {
@@ -93,6 +99,8 @@ export interface DeviceDetailResponse {
     summary: Omit<PriceSummary, "trackingSince"> & { trackingSince: string | null };
   };
   reviews: { average: number | null; count: number; items: ReviewDTO[] };
+  /** Card offers running now, biggest discount first. */
+  offers: CardOffer[];
   alternatives: {
     cheaper: RecommendationItem | null;
     better: RecommendationItem | null;
@@ -143,6 +151,7 @@ export interface ComparableDevice {
   name: string;
   variant: string;
   price: number;
+  releaseYear: number;
   cpuName: string;
   gpuName: string | null;
 }
@@ -163,4 +172,54 @@ export interface DealItem {
   changePercent: number;
   isLowest: boolean;
   changedAt: string;
+}
+
+/** The device an upgrade starts from: one on sale, or an older one that isn't. */
+export type OwnedDeviceDTO = Pick<
+  DeviceDTO,
+  | "slug"
+  | "category"
+  | "brand"
+  | "name"
+  | "variant"
+  | "releaseYear"
+  | "cpuName"
+  | "gpuName"
+  | "displayName"
+  | "cameraName"
+  | "ramGb"
+  | "storageGb"
+  | "batteryCapacity"
+  | "chargingWatts"
+  | "weightGrams"
+> & {
+  /** Today's price when it's still on sale; null for devices no longer sold. */
+  price: number | null;
+};
+
+/** A device the upgrade picker can start from. `price` is 0 for devices no longer sold. */
+export interface UpgradeStart extends ComparableDevice {
+  onSale: boolean;
+}
+
+export interface UpgradeOptionDTO {
+  item: RecommendationItem;
+  gain: number;
+  level: UpgradeLevel;
+  gainPer10k: number;
+  improvements: FactorChange[];
+  downgrades: FactorChange[];
+}
+
+export interface UpgradeResponse {
+  query: ScoringQuery;
+  poolSize: number;
+  current: { device: OwnedDeviceDTO; matchScore: number; breakdown: FactorScore[] };
+  /** Clear and big upgrades, biggest gain first. */
+  upgrades: UpgradeOptionDTO[];
+  smallSteps: number;
+  /** Score clearly higher, but not on what the use case needs most. */
+  sidegrades: number;
+  /** Slugs into `upgrades`. */
+  picks: { cheapest: string | null; biggest: string | null; bestPerRupee: string | null };
 }

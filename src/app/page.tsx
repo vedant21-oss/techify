@@ -1,6 +1,7 @@
 import { ArrowRight, BellRing, Columns3, Heart, Laptop, Search, Smartphone, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AdCard } from "@/components/ad-card";
 import { QuickSearch } from "@/components/finder/quick-search";
 import { CountUp } from "@/components/landing/count-up";
 import { IntroCurtain } from "@/components/landing/intro-curtain";
@@ -16,6 +17,7 @@ import { profileText } from "@/lib/i18n/engine-hi";
 import { getLang } from "@/lib/i18n/server";
 import { MESSAGES } from "@/lib/i18n/messages";
 import { getLandingData, getPicks } from "@/lib/recommendations";
+import { getAd } from "@/lib/server/ads";
 import { finderHref } from "@/lib/url";
 
 /** Icons and destinations for the feature grid, in the same order as the copy in messages. */
@@ -46,7 +48,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
   const lang = await getLang();
   const t = MESSAGES[lang];
-  const [landing, picks] = await Promise.all([getLandingData(lang), getPicks(undefined, lang)]);
+  const [landing, picks, ad] = await Promise.all([getLandingData(lang), getPicks(undefined, lang), getAd("home")]);
   const features = FEATURE_LINKS.map((link, i) => ({ ...link, ...t.landing.features[i] }));
   const { stats, demo, story, ticker } = landing;
   const weekly = picks.filter((p) => p.kind === "week");
@@ -190,6 +192,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             ))}
           </ul>
         </section>
+
+        {/* Ad: between Techify's own sections, never inside the picks. --------------- */}
+        {ad && <AdCard ad={ad} wide className="mt-24" />}
 
         {/* Picks -------------------------------------------------------------------- */}
         {weekly.length > 0 && (

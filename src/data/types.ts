@@ -1,5 +1,5 @@
 export type PhonePanel = "LCD" | "OLED" | "LTPO OLED";
-export type LaptopPanel = "TN" | "LCD" | "OLED" | "Liquid Retina" | "Liquid Retina XDR";
+export type LaptopPanel = "TN" | "LCD" | "OLED" | "Retina" | "Liquid Retina" | "Liquid Retina XDR";
 
 export interface DisplaySpec<Panel extends string> {
   sizeIn: number;

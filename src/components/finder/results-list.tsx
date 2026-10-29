@@ -2,6 +2,7 @@
 
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { Fragment } from "react";
 import { useLang, useMessages } from "@/components/lang-provider";
 import { BuyButtons } from "@/components/buy-buttons";
 import { displayName, keySpecs, priceProvenance } from "@/components/device-meta";
@@ -10,6 +11,9 @@ import { SaveButton } from "@/components/saved-controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatPrice, type SortMode } from "@/lib/engine";
+import { AdCard } from "@/components/ad-card";
+import { RESULTS_AD_AFTER, type AdDTO } from "@/lib/features/ads";
+import { bankName, DEFAULT_EMI_MONTHS, DEFAULT_EMI_RATE, planFor } from "@/lib/features/offers";
 import type { DeviceDTO, RecommendationItem, ScoringQuery } from "@/lib/types";
 import { MAX_COMPARE, toSearchParams } from "@/lib/url";
 import { cn } from "@/lib/utils";
@@ -18,6 +22,7 @@ import type { CompareSelection } from "./compare-tray";
 export function ResultsList({
   results,
   sort,
+  ad = null,
   query,
   cheapestAvailable,
   onRaiseBudget,
@@ -26,6 +31,7 @@ export function ResultsList({
 }: {
   results: RecommendationItem[];
   sort: SortMode;
+  ad?: AdDTO | null;
   query: ScoringQuery;
   cheapestAvailable: DeviceDTO | null;
   onRaiseBudget: (price: number) => void;
@@ -57,23 +63,39 @@ export function ResultsList({
 
   const selectionFull = selected.length >= MAX_COMPARE;
 
+  // The ad sits after the top few results (or after all of them in a short list).
+  // It is its own list item with no rank number, and ranks are never shifted by it.
+  const adAfter = Math.min(RESULTS_AD_AFTER, results.length);
+
   return (
     <ol className="flex flex-col gap-8">
-      {results.map((item) => {
+      {results.map((item, i) => {
         const isSelected = selected.some((s) => s.slug === item.device.slug);
         return (
-          <li key={item.device.id}>
-            <ResultCard
-              item={item}
-              sort={sort}
-              query={query}
-              isSelected={isSelected}
-              selectDisabled={!isSelected && selectionFull}
-              onToggle={() => onToggleSelected({ slug: item.device.slug, name: displayName(item.device) })}
-            />
-          </li>
+          <Fragment key={item.device.id}>
+            {ad && i === adAfter && (
+              <li>
+                <AdCard ad={ad} wide />
+              </li>
+            )}
+            <li>
+              <ResultCard
+                item={item}
+                sort={sort}
+                query={query}
+                isSelected={isSelected}
+                selectDisabled={!isSelected && selectionFull}
+                onToggle={() => onToggleSelected({ slug: item.device.slug, name: displayName(item.device) })}
+              />
+            </li>
+          </Fragment>
         );
       })}
+      {ad && adAfter === results.length && (
+        <li>
+          <AdCard ad={ad} wide />
+        </li>
+      )}
     </ol>
   );
 }
@@ -102,6 +124,7 @@ function ResultCard({
     budget: query.budget,
     weights: query.weights,
     mustHaves: query.mustHaves,
+    payment: query.payment,
   })}`;
   const checkboxId = `compare-${device.slug}`;
   const hasPoints = explanation.strengths.length > 0 || explanation.tradeoffs.length > 0;
@@ -134,7 +157,7 @@ function ResultCard({
             </Link>
           </h3>
           <p className="mt-2 label-mono text-ink-soft">{device.variant}</p>
-          <p className="mt-3 font-heading text-3xl font-bold tabular">{formatPrice(device.price)}</p>
+          <PriceLine item={item} query={query} />
           <p className="mt-1 text-xs text-ink-soft">{priceProvenance(device, lang)}</p>
         </div>
 
@@ -227,5 +250,35 @@ function PointList({ title, items, marker }: { title: string; items: string[]; m
         ))}
       </ul>
     </div>
+  );
+}
+
+/** The price the buyer pays: after their card's offer, and per month when paying in EMI. */
+function PriceLine({ item, query }: { item: RecommendationItem; query: ScoringQuery }) {
+  const t = useMessages().pay;
+  const quote = item.payment;
+  const price = quote?.price ?? item.device.price;
+  const months = quote?.noCostEmiMonths ?? DEFAULT_EMI_MONTHS;
+  const plan = query.payment?.emi ? planFor(price, months, quote?.noCostEmiMonths ?? null) : null;
+
+  return (
+    <>
+      <p className="mt-3 flex flex-wrap items-baseline gap-x-3 font-heading text-3xl font-bold tabular">
+        {formatPrice(price)}
+        {quote && quote.discount > 0 && (
+          <span className="font-sans text-base font-normal text-ink-soft line-through">{t.listPrice(quote.listPrice)}</span>
+        )}
+      </p>
+      {quote?.offer && quote.discount > 0 && (
+        <p className="mt-1.5 inline-block bg-pink-tint px-2 py-0.5 text-sm font-medium text-ink-deep">
+          {t.offApplied(quote.discount, bankName(quote.offer.bank), quote.offer.store)}
+        </p>
+      )}
+      {plan && (
+        <p className="mt-1.5 text-sm font-medium">
+          {plan.noCost ? `${t.noCost}: ${t.perMonth(plan.monthly, plan.months)}` : `${t.perMonth(plan.monthly, plan.months)} ${t.atRate(DEFAULT_EMI_RATE)}`}
+        </p>
+      )}
+    </>
   );
 }

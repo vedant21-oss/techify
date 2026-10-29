@@ -4,6 +4,10 @@
  * September 2026 for that kind of device; placement follows public multi-core CPU
  * and 3D GPU benchmark standings. Keys must match the names used in the seed files
  * exactly; an unknown chip fails the seed (and the tests) rather than guessing.
+ *
+ * Older chips at the end of each table are for devices people own and upgrade from
+ * (src/data/owned.ts). They aren't on sale, so they never set the top of the scale;
+ * they are placed against the current entries by the same benchmark standings.
  */
 
 /** Phone chipsets. 100 = Apple A20 Pro. */
@@ -56,6 +60,31 @@ export const PHONE_CHIPS: Record<string, number> = {
   "Apple A19 Pro": 96,
   "Snapdragon 8 Elite Gen 5": 98,
   "Apple A20 Pro": 100,
+
+  // Older chips, for the upgrade checker.
+  "Samsung Exynos 9611": 10,
+  "Snapdragon 680": 14,
+  "MediaTek Helio G95": 15,
+  "Snapdragon 720G": 17,
+  "Snapdragon 732G": 18,
+  "Snapdragon 695": 20,
+  "MediaTek Dimensity 900": 24,
+  "MediaTek Dimensity 1080": 26,
+  "Snapdragon 778G+": 32,
+  "Apple A12 Bionic": 36,
+  "Snapdragon 860": 38,
+  "Google Tensor": 40,
+  "Apple A13 Bionic": 42,
+  "Snapdragon 870": 44,
+  "Google Tensor G2": 44,
+  "Samsung Exynos 2200": 48,
+  "Apple A14 Bionic": 50,
+  "Snapdragon 8 Gen 1": 52,
+  "Snapdragon 8+ Gen 1": 58,
+  "Apple A15 Bionic": 60,
+  "Snapdragon 8 Gen 2": 66,
+  "Apple A16 Bionic": 66,
+  "Apple A17 Pro": 74,
 };
 
 /** Laptop processors. 100 = Intel Core Ultra 9 275HX. */
@@ -87,6 +116,19 @@ export const LAPTOP_CPUS: Record<string, number> = {
   "Intel Core i7-14650HX": 74,
   "AMD Ryzen 9 8940HX": 84,
   "Intel Core Ultra 7 255HX": 88,
+
+  // Older processors, for the upgrade checker.
+  "Intel Core i3-1115G4": 12,
+  "Intel Core i5-10300H": 22,
+  "AMD Ryzen 3 5300U": 22,
+  "Intel Core i5-1135G7": 26,
+  "Intel Core i5-1235U": 32,
+  "AMD Ryzen 5 5600H": 34,
+  "Intel Core i5-11400H": 36,
+  "AMD Ryzen 7 4800H": 36,
+  "Apple M1": 40,
+  "Apple M2": 46,
+  "Apple M3": 54,
 };
 
 /** Laptop graphics, integrated and dedicated. 100 = NVIDIA GeForce RTX 5090 Laptop. */
@@ -110,6 +152,14 @@ export const LAPTOP_GPUS: Record<string, number> = {
   "NVIDIA GeForce RTX 5050": 42,
   "NVIDIA GeForce RTX 4060": 46,
   "NVIDIA GeForce RTX 5060": 52,
+
+  // Older graphics, for the upgrade checker.
+  "Apple M1 7-core GPU": 14,
+  "Apple M2 8-core GPU": 20,
+  "NVIDIA GeForce GTX 1650": 20,
+  "Apple M3 8-core GPU": 24,
+  "NVIDIA GeForce RTX 3050": 27,
+  "NVIDIA GeForce GTX 1660 Ti": 28,
 };
 
 export function lookupTier(table: Record<string, number>, name: string, kind: string): number {

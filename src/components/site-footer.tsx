@@ -14,6 +14,7 @@ export async function SiteFooter() {
     { href: "/upcoming", label: t.nav.upcoming },
     { href: "/saved", label: t.nav.saved },
     { href: "/compare", label: t.nav.compare },
+    { href: "/upgrade", label: t.nav.upgrade },
     { href: "/best", label: t.nav.bestLists },
     { href: "/brands", label: t.nav.brands },
     { href: "/how-it-works", label: t.nav.howItWorks },

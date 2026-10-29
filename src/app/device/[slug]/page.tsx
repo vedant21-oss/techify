@@ -7,18 +7,23 @@ import { DeviceRow } from "@/components/device-row";
 import { GlossaryText } from "@/components/glossary-text";
 import { PriceHistoryChart } from "@/components/price-history-chart";
 import { ReviewsSection } from "@/components/reviews";
+import { AdCard } from "@/components/ad-card";
+import { OffersAndEmi } from "@/components/offers-emi";
 import { PriceAlertForm } from "@/components/price-alert-form";
 import { RecentTracker, SaveButton } from "@/components/saved-controls";
 import { displayName, priceProvenance, specRows } from "@/components/device-meta";
 import { ScoreBreakdown } from "@/components/score-breakdown";
+import { SectionNav } from "@/components/section-nav";
 import { ScoreBox } from "@/components/score-bar";
 import { UseCaseSwitcher } from "@/components/use-case-switcher";
 import { formatPrice, PROFILES } from "@/lib/engine";
+import { bankName } from "@/lib/features/offers";
 import { profileText } from "@/lib/i18n/engine-hi";
 import { getLang } from "@/lib/i18n/server";
 import { MESSAGES } from "@/lib/i18n/messages";
 import { contextSchema } from "@/lib/query";
 import { getDeviceDetail } from "@/lib/recommendations";
+import { getAd } from "@/lib/server/ads";
 import { finderHref, toSearchParams, versusHref } from "@/lib/url";
 
 async function load(props: PageProps<"/device/[slug]">) {
@@ -46,9 +51,10 @@ export default async function DevicePage(props: PageProps<"/device/[slug]">) {
   const { detail, lang } = await load(props);
   if (!detail) notFound();
   const t = MESSAGES[lang];
+  const ad = await getAd("device", detail.item.device.category, detail.item.device.slug);
 
-  const { item, query, poolSize, alternatives, gap, leader, priceHistory, reviews } = detail;
-  const scope = { useCase: query.useCase, budget: query.budget, weights: query.weights, mustHaves: query.mustHaves };
+  const { item, query, poolSize, alternatives, gap, leader, priceHistory, reviews, offers } = detail;
+  const scope = { useCase: query.useCase, budget: query.budget, weights: query.weights, mustHaves: query.mustHaves, payment: query.payment };
   const scopedHref = (slug: string) => `/device/${slug}?${toSearchParams(scope)}`;
   const altCount = Number(Boolean(alternatives.cheaper)) + Number(Boolean(alternatives.better)) + alternatives.similar.length;
   const { device, explanation } = item;
@@ -78,6 +84,11 @@ export default async function DevicePage(props: PageProps<"/device/[slug]">) {
                   </span>
                 )}
               </div>
+              {item.payment?.offer && item.payment.discount > 0 && (
+                <p className="mt-3 inline-block bg-pink-tint px-2 py-0.5 font-medium text-ink-deep">
+                  {formatPrice(item.payment.price)} · {t.pay.offApplied(item.payment.discount, bankName(item.payment.offer.bank), item.payment.offer.store)}
+                </p>
+              )}
               <p className="mt-2 text-sm text-ink-soft">{priceProvenance(device, lang)}{t.device.streetPrices}</p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <BuyButtons links={device.buyLinks} />
@@ -91,6 +102,18 @@ export default async function DevicePage(props: PageProps<"/device/[slug]">) {
           </div>
         </div>
       </section>
+
+      <SectionNav
+        label={t.device.sectionsLabel}
+        sections={[
+          { id: "breakdown-heading", label: t.device.sections.score },
+          { id: "specs-heading", label: t.device.sections.specs },
+          { id: "offers-title", label: t.device.sections.price },
+          ...(gap && leader ? [{ id: "why-not-heading", label: t.device.sections.whyNot }] : []),
+          ...(altCount > 0 ? [{ id: "alternatives-heading", label: t.device.sections.alternatives }] : []),
+          { id: "reviews-heading", label: t.device.sections.reviews },
+        ]}
+      />
 
       <div className="mx-auto max-w-6xl px-(--gutter)">
         <section className="border-b-[3px] border-ink py-10" aria-labelledby="scored-for">
@@ -108,6 +131,12 @@ export default async function DevicePage(props: PageProps<"/device/[slug]">) {
           <p className="mt-4 text-sm text-ink-soft">
             {t.device.comparedAgainst(poolSize, query.category, Math.max(query.budget, device.price))}
           </p>
+          <Link
+            href={`/upgrade?${new URLSearchParams({ from: device.slug, useCase: query.useCase })}`}
+            className="mt-3 inline-flex items-center gap-2 text-sm font-medium underline decoration-pink decoration-2 underline-offset-4 hover:bg-pink-tint"
+          >
+            {t.device.ownThis} <ArrowRight className="size-4" aria-hidden />
+          </Link>
         </section>
 
         <div className="mt-14 grid gap-14 lg:grid-cols-[1fr_22rem]">
@@ -173,6 +202,10 @@ export default async function DevicePage(props: PageProps<"/device/[slug]">) {
                 </div>
               ))}
             </dl>
+            <div className="mt-10">
+              <OffersAndEmi price={device.price} offers={offers} initialOfferId={item.payment?.offer?.id ?? null} />
+            </div>
+            {ad && <AdCard ad={ad} className="mt-10" />}
             <div className="mt-10">
               <PriceHistoryChart history={priceHistory} asOf={new Date().toISOString()} />
             </div>

@@ -6,6 +6,8 @@ import { prisma } from "@/lib/db";
 import { logIn, logOut, requireAdmin } from "@/lib/server/admin";
 import { updateDevicePrice } from "@/lib/server/catalog-admin";
 import { markLaunched } from "@/lib/server/upcoming";
+import { adFormSchema } from "@/lib/features/ad-form";
+import { offerFormSchema } from "@/lib/features/offer-form";
 
 export type ActionState = { ok?: boolean; message?: string } | null;
 
@@ -72,4 +74,83 @@ export async function markLaunchedAction(_: ActionState, form: FormData): Promis
   revalidatePath("/admin/upcoming");
   revalidatePath("/upcoming");
   return { ok: true, message: `Marked as launched. ${result.notified} subscriber${result.notified === 1 ? "" : "s"} notified.` };
+}
+
+export async function addOfferAction(_: ActionState, form: FormData): Promise<ActionState> {
+  await requireAdmin();
+  const parsed = offerFormSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0].message };
+  const { slug, validUntil, maxDiscount, ...offer } = parsed.data;
+  const device = await prisma.device.findUnique({ where: { slug }, select: { id: true, category: true } });
+  if (!device) return { ok: false, message: "Device not found." };
+  await prisma.bankOffer.create({
+    data: {
+      ...offer,
+      deviceId: device.id,
+      maxDiscount: offer.kind === "PERCENT" ? maxDiscount : null,
+      // Offers run to the end of their last day, India time.
+      validUntil: validUntil ? new Date(`${validUntil}T23:59:59+05:30`) : null,
+    },
+  });
+  revalidateOfferPages(slug, device.category);
+  return { ok: true, message: "Offer saved." };
+}
+
+export async function deleteOfferAction(form: FormData) {
+  await requireAdmin();
+  const offer = await prisma.bankOffer.delete({
+    where: { id: String(form.get("id") ?? "") },
+    include: { device: { select: { slug: true, category: true } } },
+  });
+  revalidateOfferPages(offer.device.slug, offer.device.category);
+}
+
+function revalidateOfferPages(slug: string, category: "LAPTOP" | "PHONE") {
+  revalidatePath("/admin/offers");
+  revalidatePath(`/device/${slug}`);
+  revalidatePath(category === "LAPTOP" ? "/laptops" : "/phones");
+}
+
+export async function addAdAction(_: ActionState, form: FormData): Promise<ActionState> {
+  await requireAdmin();
+  const parsed = adFormSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0].message };
+  const { deviceSlug, startsAt, endsAt, ...ad } = parsed.data;
+  let deviceId: string | null = null;
+  if (deviceSlug) {
+    const device = await prisma.device.findUnique({ where: { slug: deviceSlug }, select: { id: true } });
+    if (!device) return { ok: false, message: "That device isn't in the catalogue." };
+    deviceId = device.id;
+  }
+  await prisma.ad.create({
+    data: {
+      ...ad,
+      deviceId,
+      // Dates are whole days, India time: from the start of the first to the end of the last.
+      startsAt: startsAt ? new Date(`${startsAt}T00:00:00+05:30`) : null,
+      endsAt: endsAt ? new Date(`${endsAt}T23:59:59+05:30`) : null,
+    },
+  });
+  revalidateAdPages();
+  return { ok: true, message: "Ad saved. It shows as soon as it's live." };
+}
+
+export async function toggleAdAction(form: FormData) {
+  await requireAdmin();
+  const id = String(form.get("id") ?? "");
+  const ad = await prisma.ad.findUnique({ where: { id }, select: { active: true } });
+  if (!ad) return;
+  await prisma.ad.update({ where: { id }, data: { active: !ad.active } });
+  revalidateAdPages();
+}
+
+export async function deleteAdAction(form: FormData) {
+  await requireAdmin();
+  await prisma.ad.deleteMany({ where: { id: String(form.get("id") ?? "") } });
+  revalidateAdPages();
+}
+
+function revalidateAdPages() {
+  revalidatePath("/admin/ads");
+  revalidatePath("/", "layout");
 }

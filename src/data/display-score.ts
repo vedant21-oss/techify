@@ -30,6 +30,7 @@ export function phoneDisplayScore(d: DisplaySpec<PhonePanel>): number {
 const LAPTOP_PANEL_BASE: Record<LaptopPanel, number> = {
   TN: 18,
   LCD: 32,
+  Retina: 55,
   "Liquid Retina": 58,
   OLED: 62,
   "Liquid Retina XDR": 88,

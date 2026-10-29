@@ -5,6 +5,7 @@ import { getLang } from "@/lib/i18n/server";
 import { MESSAGES } from "@/lib/i18n/messages";
 import { parseFinderParams } from "@/lib/query";
 import { getRecommendations } from "@/lib/recommendations";
+import { getAd } from "@/lib/server/ads";
 
 export async function CategoryFinderPage({
   category,
@@ -15,7 +16,7 @@ export async function CategoryFinderPage({
 }) {
   const params = parseFinderParams(searchParams, category);
   const lang = await getLang();
-  const initialData = await getRecommendations(params, lang);
+  const [initialData, ad] = await Promise.all([getRecommendations(params, lang), getAd("results", category)]);
   const copy = MESSAGES[lang].category;
 
   return (
@@ -27,7 +28,7 @@ export async function CategoryFinderPage({
         </div>
       </section>
       {/* Keyed by language so switching re-seeds results with the translated explanations. */}
-      <Finder key={lang} category={category} initialParams={params} initialData={initialData} />
+      <Finder key={lang} category={category} initialParams={params} initialData={initialData} ad={ad} />
     </>
   );
 }

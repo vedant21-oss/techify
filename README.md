@@ -39,6 +39,9 @@ The engine lives in [`src/lib/engine`](src/lib/engine). It's a framework-free Ty
 - **About, FAQ, Contact, Privacy and Terms** pages. The contact form emails `CONTACT_EMAIL` (or `ALERTS_FROM_EMAIL`), and prints to the server log when neither is set.
 - **Press sounds**: the speaker button in the header scores the landing page's opening print — the plate knocks, the ink roller sweeps, the proof counter ratchets along its own easing curve and the sheet pulls away — plus a tick and knock on the hero buttons and cards. Everything is synthesized with Web Audio, so there are no audio files to download. Off by default, remembered per browser, and skipped with reduced motion.
 - **Accounts** (`/login`, `/signup`, `/account`): email and password. Logging in syncs the saved list and recently viewed across devices, lists every price alert and launch email with a stop button, keeps Pro with the account, and writes reviews under the account name. Alerts and Pro bought with an email only attach once that email is confirmed through the link sent at sign-up. Passwords are hashed with scrypt, sessions are random tokens stored only as hashes, five wrong passwords lock the account for 15 minutes, and password reset links expire after an hour and work once. Without Resend configured, confirmation and reset emails are printed to the server log.
+- **Card offers and EMI**: pick your bank card (credit or debit, and whether you'll pay in EMI) in the finder, and results rank on the price after that card's best offer, so a ₹43k phone with ₹4k off shows up in a ₹40k search. Offers never stack; the biggest one you qualify for wins. Device pages list the offers running and an EMI calculator (3–24 months, reducing balance, with the 18% GST banks charge on interest). No-cost EMI is worked out as stores run it: the interest comes off the price up front, and GST on that interest is still shown. Offers are entered by hand at `/admin/offers` and stop applying on their end date. The choice is kept in the URL (`pay=hdfc-credit-emi`).
+- **Upgrade checker** (`/upgrade`): pick the phone or laptop you have now, including popular older models no longer sold (2018 onwards, in [`src/data/owned.ts`](src/data/owned.ts)), plus a use case and budget. It's scored in the same pool as everything on sale, with price taken out of the weights, and the page shows the cheapest real upgrade, the biggest, and the most upgrade per rupee, with what gets better and what you'd give up. A clear upgrade is 10+ match points and a big one 20+. When the use case has essential specs (graphics for gaming, the camera for photography), a device must also be better on one of them and worse on none, so a thin laptop never "upgrades" a gaming laptop. Device pages link to it ("Own this one?").
+- **Ads** (`/admin/ads`): self-served sponsored slots on the home page, among finder results (after the top three, with no rank number) and beside device details. Each has an advertiser, headline, one line of copy, a button and a link (https:// or a path on the site), can target phone or laptop pages, promote a catalogue device (showing its live price), run between dates and rotate by weight. Every ad is labelled "Ad" with the advertiser's name; the scoring engine never reads them, and best lists and rankings never contain them. Views are counted once an ad is half on screen and clicks through a redirect that only ever goes to the ad's stored, re-validated link; both are plain totals, with no cookies.
 - **Affiliate links**: set `AMAZON_ASSOCIATE_TAG` / `FLIPKART_AFFILIATE_ID` and store links carry them with `rel="sponsored"`. Rankings never use them.
 
 ## Free-text search
@@ -70,6 +73,13 @@ npm test                # engine and query-parser unit tests
 npm run typecheck
 npm run lint
 ```
+
+## Deploying to Vercel
+
+1. **Database.** In the Vercel project, open Storage → Create Database → Neon (Postgres) and connect it to the project for Production and Preview. That sets `DATABASE_URL` (pooled, used by the app) and `DATABASE_URL_UNPOOLED` (direct, used for migrations).
+2. **Environment variables.** Under Settings → Environment Variables add at least `APP_URL` (the site's public address), `ADMIN_PASSWORD` and `CRON_SECRET`. The rest in `.env.example` are optional.
+3. **Deploy.** `npm run build` runs `prisma migrate deploy`, so every deploy brings the database schema up to date before building.
+4. **Seed once.** From your machine: `DATABASE_URL="<the Neon unpooled URL>" npm run db:seed` to load the catalogue.
 
 ## API
 

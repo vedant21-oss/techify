@@ -118,6 +118,11 @@
   }
 }
 
+/* Jump links land below the sticky header and section nav, not under them. */
+main :is(h2, h3)[id] {
+  scroll-margin-top: 8rem;
+}
+
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }

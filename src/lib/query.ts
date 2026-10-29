@@ -2,6 +2,7 @@ import { z } from "zod";
 import { BUDGET_RANGES, DEFAULT_USE_CASE, isUseCaseFor } from "@/lib/catalog-config";
 import { decodeWeights, type Category, type SortMode, type UseCase, type WeightMap } from "@/lib/engine";
 import { parseMustHaves } from "@/lib/features/must-haves";
+import { decodePayment, type Payment } from "@/lib/features/offers";
 import { MAX_COMPARE } from "@/lib/url";
 
 const category = z.enum(["laptop", "phone"]);
@@ -17,6 +18,8 @@ export interface RecommendationParams {
   weights: WeightMap | null;
   /** Must-have filter ids applied before ranking. */
   mustHaves: string[];
+  /** The buyer's card; prices are ranked after its best offer. */
+  payment: Payment | null;
 }
 
 /** Strict parser for the recommend API: every field required except sort. */
@@ -28,16 +31,18 @@ export const recommendationSchema = z
     sort: sort.default("match"),
     w: z.string().max(300).optional(),
     must: z.string().max(300).optional(),
+    pay: z.string().max(40).optional(),
   })
   .refine((q) => isUseCaseFor(q.category, q.useCase), {
     message: "useCase is not valid for this category",
     path: ["useCase"],
   })
   .transform(
-    ({ w, must, ...q }): RecommendationParams => ({
-      ...(q as Omit<RecommendationParams, "weights" | "mustHaves">),
+    ({ w, must, pay, ...q }): RecommendationParams => ({
+      ...(q as Omit<RecommendationParams, "weights" | "mustHaves" | "payment">),
       weights: decodeWeights(q.category, w),
       mustHaves: parseMustHaves(q.category, must),
+      payment: decodePayment(pay),
     }),
   );
 
@@ -47,6 +52,7 @@ export const contextSchema = z.object({
   budget: budget.optional(),
   w: z.string().max(300).optional(),
   must: z.string().max(300).optional(),
+  pay: z.string().max(40).optional(),
 });
 
 export const compareSchema = contextSchema.extend({
@@ -78,6 +84,7 @@ export function parseFinderParams(params: SearchParams, fixedCategory?: Category
     sort: sort.safeParse(first(params.sort)).data ?? "match",
     weights: decodeWeights(cat, first(params.w)),
     mustHaves: parseMustHaves(cat, first(params.must)),
+    payment: decodePayment(first(params.pay)),
   };
 }
 

@@ -9,6 +9,8 @@ import { UseCaseIcon } from "@/components/use-case-icon";
 import { BUDGET_RANGES, CATEGORIES } from "@/lib/catalog-config";
 import { profileText } from "@/lib/i18n/engine-hi";
 import { PROFILES, formatBudgetShort, formatPrice, type Category, type SortMode, type UseCase, type WeightMap } from "@/lib/engine";
+import type { AdDTO } from "@/lib/features/ads";
+import type { Payment } from "@/lib/features/offers";
 import type { ParseQueryResponse } from "@/lib/nl-query/types";
 import type { RecommendationParams } from "@/lib/query";
 import type { RecommendationResponse } from "@/lib/types";
@@ -18,6 +20,7 @@ import { CompareTray, type CompareSelection } from "./compare-tray";
 import { QuickSearch } from "./quick-search";
 import { ResultFilters, applyFilters, EMPTY_FILTERS, type FilterState } from "./result-filters";
 import { ResultsList } from "./results-list";
+import { PaymentPicker } from "./payment-picker";
 import { MustHavePicker, WeightsPanel } from "./tuning";
 
 const FETCH_DEBOUNCE_MS = 220;
@@ -35,10 +38,13 @@ export function Finder({
   category,
   initialParams,
   initialData,
+  ad = null,
 }: {
   category: Category;
   initialParams: RecommendationParams;
   initialData: RecommendationResponse;
+  /** A sponsored slot shown among the results, never ranked. */
+  ad?: AdDTO | null;
 }) {
   const [useCase, setUseCase] = useState<UseCase>(initialParams.useCase);
   const [budget, setBudget] = useState(initialParams.budget);
@@ -50,6 +56,7 @@ export function Finder({
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [weights, setWeights] = useState<WeightMap | null>(initialParams.weights);
   const [mustHaves, setMustHaves] = useState<string[]>(initialParams.mustHaves);
+  const [payment, setPayment] = useState<Payment | null>(initialParams.payment);
   const resultsRef = useRef<HTMLElement>(null);
   const isFirstRun = useRef(true);
   const lang = useLang();
@@ -61,8 +68,8 @@ export function Finder({
 
   // Keep the URL shareable without a server round trip.
   useEffect(() => {
-    window.history.replaceState(null, "", `?${toSearchParams({ useCase, budget, sort, weights, mustHaves })}${window.location.hash}`);
-  }, [useCase, budget, sort, weights, mustHaves]);
+    window.history.replaceState(null, "", `?${toSearchParams({ useCase, budget, sort, weights, mustHaves, payment })}${window.location.hash}`);
+  }, [useCase, budget, sort, weights, mustHaves, payment]);
 
   useEffect(() => {
     if (isFirstRun.current) {
@@ -73,7 +80,7 @@ export function Finder({
     setLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/recommend?${toSearchParams({ category, useCase, budget, weights, mustHaves })}`, {
+        const res = await fetch(`/api/recommend?${toSearchParams({ category, useCase, budget, weights, mustHaves, payment })}`, {
           signal: controller.signal,
         });
         const body = await res.json();
@@ -92,7 +99,7 @@ export function Finder({
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the error copy doesn't change what's fetched
-  }, [category, useCase, budget, weights, mustHaves]);
+  }, [category, useCase, budget, weights, mustHaves, payment]);
 
   const ranked = useMemo(
     () => [...data.results].sort((a, b) => (sort === "value" ? a.valueRank - b.valueRank : a.matchRank - b.matchRank)),
@@ -203,6 +210,10 @@ export function Finder({
             <Step label={t.finder.mustHave}>
               <MustHavePicker category={category} selected={mustHaves} onChange={setMustHaves} />
             </Step>
+
+            <Step label={t.pay.step}>
+              <PaymentPicker value={payment} onChange={setPayment} />
+            </Step>
           </div>
         </aside>
 
@@ -278,6 +289,7 @@ export function Finder({
               <ResultsList
                 results={visible}
                 sort={sort}
+                ad={ad}
                 query={data.query}
                 cheapestAvailable={data.cheapestAvailable}
                 onRaiseBudget={(price) => setBudget(Math.min(range.max, Math.ceil(price / range.step) * range.step))}

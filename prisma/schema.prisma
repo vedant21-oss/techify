@@ -54,11 +54,49 @@ model Device {
   pricePoints PricePoint[]
   reviews     Review[]
   listEntries ListEntry[]
+  offers      BankOffer[]
+  ads         Ad[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([category, price])
+}
+
+enum CardType {
+  ANY
+  CREDIT
+  DEBIT
+}
+
+enum OfferKind {
+  FLAT
+  PERCENT
+}
+
+/// An instant card discount at one store, entered from the admin dashboard. One
+/// offer applies per purchase: the biggest one the buyer's card qualifies for.
+model BankOffer {
+  id              String    @id @default(cuid())
+  deviceId        String
+  device          Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  /// Bank id from BANKS in src/lib/features/offers.ts.
+  bank            String
+  cardType        CardType  @default(ANY)
+  kind            OfferKind
+  /// Rupees for FLAT, percent for PERCENT. Zero for an offer that is only no-cost EMI.
+  amount          Int
+  /// Cap on a PERCENT discount, in rupees.
+  maxDiscount     Int?
+  /// The discount only applies when the purchase is converted to EMI.
+  emiOnly         Boolean   @default(false)
+  /// Longest no-cost EMI tenure the offer allows, in months.
+  noCostEmiMonths Int?
+  store           String
+  validUntil      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([deviceId])
 }
 
 /// "Email me when this device drops to ₹X." Checked by the daily price-alert job.
@@ -240,4 +278,39 @@ model ListEntry {
 
   @@unique([userId, kind, deviceId])
   @@index([userId, kind, addedAt])
+}
+
+enum AdPlacement {
+  HOME
+  RESULTS
+  DEVICE
+}
+
+/// A sponsored slot, entered from the admin dashboard. Always shown labelled as an
+/// ad, and never read by the scoring engine, so it can't move a ranking.
+model Ad {
+  id          String        @id @default(cuid())
+  /// Who paid for it, shown next to the "Ad" label.
+  advertiser  String
+  headline    String
+  body        String
+  cta         String
+  /// Where the click goes: an https:// URL or a path on this site.
+  url         String
+  placements  AdPlacement[]
+  /// Only on phone or laptop pages; null shows it on both.
+  category    Category?
+  /// Optional catalogue device; the ad then shows its live price.
+  deviceId    String?
+  device      Device?       @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  /// Relative share when several ads compete for one slot.
+  weight      Int           @default(1)
+  active      Boolean       @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  views       Int           @default(0)
+  clicks      Int           @default(0)
+  createdAt   DateTime      @default(now())
+
+  @@index([active])
 }

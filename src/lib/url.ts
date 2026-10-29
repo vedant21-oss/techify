@@ -1,9 +1,10 @@
 import { encodeWeights } from "@/lib/engine";
+import { encodePayment, type Payment } from "@/lib/features/offers";
 import type { RecommendationParams } from "@/lib/query";
 
 export const MAX_COMPARE = 3;
 
-/** Serialises finder state; custom weights become `w` and must-haves `must`. */
+/** Serialises finder state; custom weights become `w`, must-haves `must` and the card `pay`. */
 export function toSearchParams(params: Partial<RecommendationParams> & { slugs?: string[] }): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -11,6 +12,9 @@ export function toSearchParams(params: Partial<RecommendationParams> & { slugs?:
     if (key === "weights") {
       const encoded = encodeWeights(value as NonNullable<RecommendationParams["weights"]>);
       if (encoded) search.set("w", encoded);
+    } else if (key === "payment") {
+      const encoded = encodePayment(value as Payment);
+      if (encoded) search.set("pay", encoded);
     } else if (key === "mustHaves") {
       if ((value as string[]).length) search.set("must", (value as string[]).join(","));
     } else {
@@ -32,6 +36,7 @@ export function finderHref(params: {
   sort?: string;
   weights?: RecommendationParams["weights"];
   mustHaves?: string[];
+  payment?: Payment | null;
 }): string {
   const { category, ...rest } = params;
   const qs = toSearchParams(rest as Partial<RecommendationParams>);

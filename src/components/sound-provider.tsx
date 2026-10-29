@@ -159,7 +159,7 @@ export function SoundToggle({ className }: { className?: string }) {
       className={cn("flex items-center gap-2", className)}
     >
       <Icon className="size-4" aria-hidden />
-      <span className="sr-only xl:not-sr-only">{enabled ? t.on : t.off}</span>
+      <span className="sr-only 2xl:not-sr-only">{enabled ? t.on : t.off}</span>
     </button>
   );
 }
