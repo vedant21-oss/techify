@@ -78,7 +78,7 @@ npm run lint
 
 1. **Database.** In the Vercel project, open Storage → Create Database → Neon (Postgres) and connect it to the project for Production and Preview. That sets `DATABASE_URL` (pooled, used by the app) and `DATABASE_URL_UNPOOLED` (direct, used for migrations).
 2. **Environment variables.** Under Settings → Environment Variables add at least `APP_URL` (the site's public address), `ADMIN_PASSWORD` and `CRON_SECRET`. The rest in `.env.example` are optional.
-3. **Deploy.** `npm run build` runs `prisma migrate deploy`, so every deploy brings the database schema up to date before building.
+3. **Deploy.** `npm run build` runs `prisma migrate deploy` (except on Vercel preview builds, which share the production database and would race it for the migration lock), so every production deploy brings the schema up to date before building.
 4. **Seed once.** From your machine: `DATABASE_URL="<the Neon unpooled URL>" npm run db:seed` to load the catalogue.
 
 ## API
